@@ -73,18 +73,11 @@ Calculate the correlation (Pearson Correlation Coefficient) between the temperat
 #Y = 90, 82, 78, 75 . Mean y = 81.25
 #r = [(x1-Mean x)(y1-Mean y)+(x2-Mean x)(y2-Mean y)+(x3-Mean x)(y3-Mean y)+ (x4-Mean x)(y4-Mean y)] / Sqrt(Summation(x -Mean x)^2) * Sqrt(Summation(y -Mean y)^2) 
 #r = -61.25 / sqrt(232.75) * sqrt(126.75) = -61.25 / 15.256 * 11.258
-#r = -61.25 / 171.752 =  -0.3566
+#r = -61.25 / 171.752 =  -0.3566          # Manual calculation of Pearson Corr Coefficient
 
-X = c(59,58,78,60)
-Y = c(90,82,78,75)
-cor(X,Y, method = 'pearson')
-SSX = sum((X-mean(X))^2)
-SSX
-SSY = sum((Y-mean(Y))^2)
-SSY
-SSXY = sum((X-mean(X))*(Y-mean(Y)))
-SSXY
-SSXY/sqrt(SSX * SSY)
+A = c(59,58,78,60)
+B = c(90,82,78,75)
+cor(A,B, method = 'pearson')
 ```
 
 
@@ -99,21 +92,20 @@ library("dplyr")
 
 ```{r}
 
-MyData <- read.csv('C:\\Users\\adsmith3\\Downloads\\Online_Retail.csv', na.strings=c("","NA"))
+MyData <- read.csv('Online_Retail.csv', na.strings=c("","NA"))
 
 TransactionsbyCountry_Interim1<-MyData[,c(1,8)]     # Select InvoiceNo & Country
 TransactionsbyCountry_Interim2=distinct(TransactionsbyCountry_Interim1)   # Remove duplicated rows
-
-No_Of_Trans_by_Country <- summarise(group_by(TransactionsbyCountry_Interim2, Country), No_of_Trans=n()) 
+print(TransactionsbyCountry_Interim2)
+NoOfTransbyCountry <- summarise(group_by(TransactionsbyCountry_Interim2, Country), No_of_Trans=n()) 
 
 # To get Number of transactions by country - By Percentage
-No_Of_Trans_by_Country
+NoOfTransbyCountry
 TotalNoTrans <- nrow(TransactionsbyCountry_Interim2)
 
-No_Of_Trans_by_Country <- No_Of_Trans_by_Country %>% mutate(Percentage = (No_of_Trans/TotalNoTrans)*100) 
+NoOfTransbyCountry <- NoOfTransbyCountry %>% mutate(Percentage = (No_of_Trans/TotalNoTrans)*100)
 
-head(No_Of_Trans_by_Country)
-
+NoOfTransbyCountry
 
 ```
 
@@ -121,7 +113,7 @@ head(No_Of_Trans_by_Country)
 ```{r}
 
 # To get Countries have more than 1% of transactions
-filter(No_Of_Trans_by_Country, Percentage > 1.0) 
+filter(NoOfTransbyCountry, Percentage > 1.0) 
 
 ```
 
@@ -132,7 +124,7 @@ filter(No_Of_Trans_by_Country, Percentage > 1.0)
 ```{r}
 
 MyDataNew <- MyData %>% mutate(TransactionValue = Quantity * UnitPrice)
-head(MyDataNew)
+MyDataNew
 
 ```
 
@@ -142,13 +134,13 @@ head(MyDataNew)
 ```{r}
 
 MyDataNew_Interim1 <- MyDataNew[,c(8,9)]     # Select columns Country & Transaction Value
-TransactionValbyCountry <- 
-  aggregate(
+TransactionValbyCountry <- aggregate(
   MyDataNew_Interim1$TransactionValue,
   by=list(MyDataNew_Interim1$Country),
-  FUN=sum)
+  FUN=sum
+)
 
-head(TransactionValbyCountry)
+TransactionValbyCountry
 
 #max(TransactionValbyCountry$TransactionValue)
 TransLargerThan130K <- filter(TransactionValbyCountry, x > 130000)
@@ -161,12 +153,13 @@ TransLargerThan130K
 
 ```{r}
 
-getTransValue <- function(df) {return(df$TransactionValue)
+getTransValue <- function(df) {
+  return(df$TransactionValue)
 }
 
 subset(MyDataNew_Interim1, subset = Country == "Germany", select = c(TransactionValue)) %>%
   getTransValue %>%
-  hist(n=30)
+  hist()
 
 ```
 
@@ -176,7 +169,7 @@ subset(MyDataNew_Interim1, subset = Country == "Germany", select = c(Transaction
 ```{r}
 
 HighestNoTransactions <- MyDataNew[,c(1,7)]
-HighestNoTransactions %>% distinct() %>% group_by(CustomerID) %>% summarise(InvoiceNoCount = n()) %>% arrange(desc(InvoiceNoCount)) %>% head()
+HighestNoTransactions %>% distinct() %>% group_by(CustomerID) %>% summarise(InvoiceNoCount = n()) %>% arrange(desc(InvoiceNoCount))
 
 
 # The customer with the highest number of transactions has CustomerID =NA. This could be different customers who do not have a customer ID in the file (or NA as their customer ID).
@@ -212,10 +205,7 @@ colMeans(is.na(MyData))*100
 MissCustRecbyCountry1 <-MyData[,c(1,7,8)]     # Select InvoiceNo, CustomerID & Country
 MissCustRecbyCountry1 <- distinct(MissCustRecbyCountry1) # Remove duplicate rows of Invoice Nos
 MissCustRecbyCountry1 <- MissCustRecbyCountry1[,c(-1)]  # Get rid of InvoiceNo column
-MissCustRecbyCountry1 %>% 
-  group_by(Country) %>% 
-  filter(is.na(CustomerID)) %>% 
-  summarise(Missing_CustomerID = n())
+MissCustRecbyCountry1 %>% group_by(Country) %>% filter(is.na(CustomerID)) %>% summarise(Missing_CustomerID = n())
 
 ```
 
@@ -227,19 +217,11 @@ MissCustRecbyCountry1 %>%
 TotalNoTrans <- nrow(TransactionsbyCountry_Interim2) # Total No of Transactions = 25900
 
 Return_Rate_Interim1 <- MyDataNew[,c(1,9)]
-Return_Rate_Interim2 <- filter(Return_Rate_Interim1, TransactionValue < 0) 
-# Returned transactions
-TotalNoCancTrans = Return_Rate_Interim2 %>% 
-  distinct(InvoiceNo) %>% 
-  nrow() 
-# No of Returned transactions = 3838
+Return_Rate_Interim2 <- filter(Return_Rate_Interim1, TransactionValue < 0) # Returned transactions
+TotalNoCancTrans = Return_Rate_Interim2 %>% distinct(InvoiceNo) %>% nrow() # No of Retd trans = 3838
 
-Percentage_of_Cancelled_Transactions_OR_Return_Rate = 
-  Percentage = 
-  (TotalNoCancTrans/TotalNoTrans)*100
-Percentage_of_Cancelled_Transactions_OR_Return_Rate
-sprintf("The percentage of cancelled transactions or return rate is %.2f", (Return_Rate_Interim2$Percentage_of_Cancelled_Transactions_OR_Return_Rate))
-
+PercentageofCancelledTransactionsORReturnRate = Percentage = (TotalNoCancTrans/TotalNoTrans)*100
+PercentageofCancelledTransactionsORReturnRate
 
 ```
 
@@ -289,6 +271,8 @@ PctofNoofTransbyWeekDay <- TransactionsbyWeekDay_1 %>%
 PctofNoofTransbyWeekDay
 
 ```
+
+
 # Question 7(b) - Show the percentage of transactions (by transaction volume) by days of the week. 
 
 ```{r}
@@ -308,19 +292,21 @@ PctTransVolbyWeekDay
 
 ```
 
+
 # Question 7(c) - Show the percentage of transactions (by transaction volume) by month of the year.
 
 ```{r}
 
 TransactionsbyMonth_1 <-MyDataStripped[,c(12,13)]            # Select New_Inv_Mth & TransValue
-TransactionsbyMonth_1 <- 
-  aggregate(TransactionsbyMonth_1$TransactionValue,
+TransactionsbyMonth_1 <- aggregate(
+  TransactionsbyMonth_1$TransactionValue,
   by=list(TransactionsbyMonth_1$New_Invoice_Month),
-  FUN=sum)
+  FUN=sum
+)
 
 PctofTransactionsbyMonth <- TransactionsbyMonth_1 %>% 
   mutate(PctOfTrans_ByVol_ByMth = (TransactionsbyMonth_1$x/9747748)*100)
-head(PctofTransactionsbyMonth)
+PctofTransactionsbyMonth
 
 ```
 
@@ -344,25 +330,9 @@ subset(new7D, new7D$NoofTransByDate == max(new7D$NoofTransByDate))
 ```
 
 
-#Question 7(e) The company needs to shut down the website for two consecutive hours for maintenance. What would be the hour of the day to start this so that the distribution is at minimum for the customers? The responsible IT team is available from 7:00 to 20:00 every day
+#Question 7(e) - e)	The company needs to shut down the website for two consecutive hours for maintenance. What would be the hour of the day to start this so that the distribution is at minimum for the customers? The responsible IT team is available from 7:00 to 20:00 every day
 
 ```{r}
-# no_trans_per_hour <- or_df_1 %>%
- # Select(CustomerID, Invoice_Hour, Invoice_Day_Week
- # distinct() %>%
- # group_by(Invoice_Hour) %>%
- # summarize(sum_trans = sum(n)) %>%
- # filter(Invoice_Hour >= 7 & Invoice_Hour <= 20)
-# no_trans_per_hour
-# combination_hrs <- comdn
-
-# only_consective_hrs <- function (hrs) {
-  # return(
-   # hrs %>%
-    #  apply(MARGIN = 2), FUN = function(v) {
-    #    diff1 <- diff(v))
-#  if (diff_hrs ++ 3)}
-
 
 
 ```
@@ -385,6 +355,6 @@ customer_days <- MyData %>%
 
 customer_days
 mean(customer_days$no_days)
-sprintf("The average number of days between consecutive shopping dates for customers is %.2f days", mean(customer_days$no_days))
+sprintf("The average number of days between consective shopping dates for customers is %.2f days", mean(customer_days$no_days))
 ```
 
