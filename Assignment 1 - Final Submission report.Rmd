@@ -1,0 +1,390 @@
+---
+title: "R Notebook - Assignment 1"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+  word_document: default
+---
+```{r}
+library("dplyr")
+```
+
+
+# Question 1a) - What is the probability of obtaining a score greater than 700 on a GMAT test that has a mean of 494 and a standard deviation of 100? Assume GMAT scores are normally distributed.
+
+```{r}
+
+# Z = (700-494)/100 = 206/100 = 2.06        # Calculate the z value
+# p = .0197 or probability is 1.97%         # Manually obtain the probability through z-table
+
+pnorm(2.06,lower.tail = FALSE)              # Calculate probability through R
+
+```
+
+# Question 1b) - what is the probability of getting a score between 350 and 450 on the same GMAT exam?
+
+```{r}
+
+#p(350<score<450) = p(Score<450) - p(Score<350)
+
+#p(Score<450) =  ?  z = (450-494)/100 = -44/100 = -0.44       # Calculate the z value
+#p(Score<450) = .3300 (after lookup)              # Manually obtain the probability through z-table
+
+#p(Score<350) =  ?  z = (350-494)/100 = - 144/100 = -1.44     # Calculate the z value
+#p(Score<350) = .0749 (after lookup)              # Manually obtain the probability through z-table
+
+#P(350<score<450) = .3300 - .0749 = 0.2551 or 25.51%  # Manually calculate the probability
+
+pnorm(-1.44, lower.tail=FALSE) - pnorm(-0.44, lower.tail=FALSE)   # Calculate probability through R
+
+```
+
+# Question 2 - Runzheimer International publishes business travel costs for various cities throughout the world. In particular, they publish per diem totals, which represent the average costs for the typical business traveler including three meals a day in business-class restaurants and single-rate lodging in business-class hotels and motels. If 86.65% of the per diem costs in Buenos Aires, Argentina, are less than $449 and if the standard deviation of per diem costs is $36, what is the average per diem cost in Buenos Aires? Assume that per diem costs are normally distributed 
+
+```{r}
+
+#Area under the curve = 86.65% 
+#Area under the curve on LHS = 50%
+#Area under the curve on RHS = 36.65% or .3665 After lookup, z = 1.11
+#Standard Deviation = $36
+#So we have, z = (x - u)/Std Dev
+#		1.11 = (449 - u)/36
+#		u = 449 - ((1.11)(36)) = 449 - 39.96 = 409.04
+
+# Average per diem cost in Buenos Aires is $409.04
+
+```
+
+
+# Question 3 - Chris is interested in understanding the correlation between temperature in Kent, OH and Los Angeles, CA. He has got the following data for September 2017 from Alpha Knowledgebase. 
+
+He has sampled the mid-day temperature for days from Sep 2 to Sep 6 as follows:
+
+Kent=c(59, 68, 78, 60) 
+Los_Angeles=c(90, 82, 78, 75) 
+
+Calculate the correlation (Pearson Correlation Coefficient) between the temperatures of the two cities without using any R commands i.e. calculate step by step.
+
+```{r}
+
+#X = 59, 68, 78, 60 . Mean x = 66.25
+#Y = 90, 82, 78, 75 . Mean y = 81.25
+#r = [(x1-Mean x)(y1-Mean y)+(x2-Mean x)(y2-Mean y)+(x3-Mean x)(y3-Mean y)+ (x4-Mean x)(y4-Mean y)] / Sqrt(Summation(x -Mean x)^2) * Sqrt(Summation(y -Mean y)^2) 
+#r = -61.25 / sqrt(232.75) * sqrt(126.75) = -61.25 / 15.256 * 11.258
+#r = -61.25 / 171.752 =  -0.3566
+
+X = c(59,58,78,60)
+Y = c(90,82,78,75)
+cor(X,Y, method = 'pearson')
+SSX = sum((X-mean(X))^2)
+SSX
+SSY = sum((Y-mean(Y))^2)
+SSY
+SSXY = sum((X-mean(X))*(Y-mean(Y)))
+SSXY
+SSXY/sqrt(SSX * SSY)
+```
+
+
+```{r}
+
+library("dplyr")
+
+```
+
+
+# Question 4 - Show the breakdown of the number of transactions by countries i.e. how many transactions are in the dataset for each country (consider all records including cancelled transactions). Show this in total number and also in percentage. Show only countries accounting for more than 1% of the total transactions. 
+
+```{r}
+
+MyData <- read.csv('C:\\Users\\adsmith3\\Downloads\\Online_Retail.csv', na.strings=c("","NA"))
+
+TransactionsbyCountry_Interim1<-MyData[,c(1,8)]     # Select InvoiceNo & Country
+TransactionsbyCountry_Interim2=distinct(TransactionsbyCountry_Interim1)   # Remove duplicated rows
+
+No_Of_Trans_by_Country <- summarise(group_by(TransactionsbyCountry_Interim2, Country), No_of_Trans=n()) 
+
+# To get Number of transactions by country - By Percentage
+No_Of_Trans_by_Country
+TotalNoTrans <- nrow(TransactionsbyCountry_Interim2)
+
+No_Of_Trans_by_Country <- No_Of_Trans_by_Country %>% mutate(Percentage = (No_of_Trans/TotalNoTrans)*100) 
+
+head(No_Of_Trans_by_Country)
+
+
+```
+
+
+```{r}
+
+# To get Countries have more than 1% of transactions
+filter(No_Of_Trans_by_Country, Percentage > 1.0) 
+
+```
+
+
+# Question 5 -	Create a new variable 'TransactionValue' that is the product of the exising 'Quantity' and 'UnitPrice' variables. Add this variable to the dataframe. 
+
+
+```{r}
+
+MyDataNew <- MyData %>% mutate(TransactionValue = Quantity * UnitPrice)
+head(MyDataNew)
+
+```
+
+
+# Question 6 -	Using the newly created variable, TransactionValue, show the breakdown of transaction values by countries i.e. how much money in total has been spent each country. Show this in total sum of transaction values. Show only countries with total transaction exceeding 130,000 British Pound. 
+
+```{r}
+
+MyDataNew_Interim1 <- MyDataNew[,c(8,9)]     # Select columns Country & Transaction Value
+TransactionValbyCountry <- 
+  aggregate(
+  MyDataNew_Interim1$TransactionValue,
+  by=list(MyDataNew_Interim1$Country),
+  FUN=sum)
+
+head(TransactionValbyCountry)
+
+#max(TransactionValbyCountry$TransactionValue)
+TransLargerThan130K <- filter(TransactionValbyCountry, x > 130000)
+TransLargerThan130K
+
+```
+
+
+# Question 8 - Plot the histogram of transaction values from Germany. Use the hist() function to plot.
+
+```{r}
+
+getTransValue <- function(df) {return(df$TransactionValue)
+}
+
+subset(MyDataNew_Interim1, subset = Country == "Germany", select = c(TransactionValue)) %>%
+  getTransValue %>%
+  hist(n=30)
+
+```
+
+
+# Question 9(i) - Which customer had the highest number of transactions? Which customer is most valuable (i.e. highest total sum of transactions)?
+
+```{r}
+
+HighestNoTransactions <- MyDataNew[,c(1,7)]
+HighestNoTransactions %>% distinct() %>% group_by(CustomerID) %>% summarise(InvoiceNoCount = n()) %>% arrange(desc(InvoiceNoCount)) %>% head()
+
+
+# The customer with the highest number of transactions has CustomerID =NA. This could be different customers who do not have a customer ID in the file (or NA as their customer ID).
+```
+
+
+
+# Question 9 (ii) - Which customer is most valuable (i.e. highest total sum of transactions)? 
+
+```{r}
+
+HighestValofTransactions <- MyDataNew[,c(7,9)] # Select columns for CustomerID & Transn Value
+MostValCustomer <- summarise(group_by(HighestValofTransactions,CustomerID), High_Trans_Val=sum(n()), na.rm=TRUE)
+which.max(MostValCustomer$High_Trans_Val) 
+MostValCustomer[4373,]
+
+```
+
+
+# Question 10 - Calculate the percentage of missing values for each variable in the dataset.
+
+```{r}
+
+colMeans(is.na(MyData))*100
+
+```
+
+
+# Question 11 - No of transactions with missing CustomerID records by countries
+
+```{r}
+
+MissCustRecbyCountry1 <-MyData[,c(1,7,8)]     # Select InvoiceNo, CustomerID & Country
+MissCustRecbyCountry1 <- distinct(MissCustRecbyCountry1) # Remove duplicate rows of Invoice Nos
+MissCustRecbyCountry1 <- MissCustRecbyCountry1[,c(-1)]  # Get rid of InvoiceNo column
+MissCustRecbyCountry1 %>% 
+  group_by(Country) %>% 
+  filter(is.na(CustomerID)) %>% 
+  summarise(Missing_CustomerID = n())
+
+```
+
+
+# Question 13 - In the retail sector, it is very important to understand the return rate of the goods purchased by customers. In this example, we can define this quantity, simply, as the ratio of the number of transactions cancelled (regardless of the transaction value) over the total number of transactions. With this definition, what is the return rate for the French customers? Consider the cancelled transactions as those where the 'Quantity' variable has a negative value.
+
+```{r}
+
+TotalNoTrans <- nrow(TransactionsbyCountry_Interim2) # Total No of Transactions = 25900
+
+Return_Rate_Interim1 <- MyDataNew[,c(1,9)]
+Return_Rate_Interim2 <- filter(Return_Rate_Interim1, TransactionValue < 0) 
+# Returned transactions
+TotalNoCancTrans = Return_Rate_Interim2 %>% 
+  distinct(InvoiceNo) %>% 
+  nrow() 
+# No of Returned transactions = 3838
+
+Percentage_of_Cancelled_Transactions_OR_Return_Rate = 
+  Percentage = 
+  (TotalNoCancTrans/TotalNoTrans)*100
+Percentage_of_Cancelled_Transactions_OR_Return_Rate
+sprintf("The percentage of cancelled transactions or return rate is %.2f", (Return_Rate_Interim2$Percentage_of_Cancelled_Transactions_OR_Return_Rate))
+
+
+```
+
+
+# Question 14 - What is the product that has generated the highest revenue for the retailer? (i.e. item with the highest total sum of 'TransactionValue').
+
+```{r}
+HighestGrossingProd_Interim1<-MyDataNew[,c(2,9)] # Select column 2 & 9 - StockCode & TransactionValue
+HighestGrossingProd_Interim2 <- aggregate(
+  HighestGrossingProd_Interim1$TransactionValue,
+  by=list(HighestGrossingProd_Interim1$StockCode),
+  FUN = sum
+)
+HighestGrossingProd_Interim2
+which.max(HighestGrossingProd_Interim2$Stock_Trans_Value)
+HighestGrossingProd_Interim2[3538,]
+
+```
+
+
+# Question 15 - How many unique customers are represented in the dataset? You can use unique() and length() functions.
+
+```{r}
+
+UniqueCustomers_Interim1<-select(MyData, CustomerID)   #  Select column 7 & 8 - CustomerID & Country
+UniqueCustomers_Interim2 <- distinct(UniqueCustomers_Interim1)
+UniqueCustomers_Interim2 %>% summarise(Total_Customers = n())
+
+```
+
+
+# Question 7(a) - Show the percentage of transactions (by numbers) by days of the week.
+
+```{r}
+
+Temp=strptime(MyData$InvoiceDate,format='%m/%d/%Y %H:%M',tz='GMT')
+MyData$New_Invoice_Date <- as.Date(Temp)
+MyData$Invoice_Day_Week= weekdays(MyData$New_Invoice_Date)
+MyData$New_Invoice_Hour = as.numeric(format(Temp, "%H"))
+MyData$New_Invoice_Month = as.numeric(format(Temp, "%m"))
+TransactionsbyWeekDay <-MyData[,c(1,10)]            # Select InvoiceNo & Invoice_Day_Week
+TransactionsbyWeekDay_1 = distinct(TransactionsbyWeekDay)  # Remove duplicated rows & count row
+TransactionsbyWeekDay_1 <- summarise(group_by(TransactionsbyWeekDay_1, Invoice_Day_Week), No_of_Trans_By_Day=n())
+TotalNoTrans
+PctofNoofTransbyWeekDay <- TransactionsbyWeekDay_1 %>% 
+  mutate(Percentage_Of_Trans_By_Weekday = (No_of_Trans_By_Day/TotalNoTrans)*100)
+PctofNoofTransbyWeekDay
+
+```
+# Question 7(b) - Show the percentage of transactions (by transaction volume) by days of the week. 
+
+```{r}
+
+MyDataStripped <- MyData %>% mutate(TransactionValue = Quantity * UnitPrice)
+PctTransVolbyWeekDay_Temp <-MyDataStripped[,c(10,13)]            # Select InvoiceDayWeek & TransValue
+PctTransVolbyWeekDay <- aggregate(
+  PctTransVolbyWeekDay_Temp$TransactionValue,
+  by=list(PctTransVolbyWeekDay_Temp$Invoice_Day_Week),
+  FUN=sum
+)
+PctTransVolbyWeekDay
+TotalTransByVol <- summarise(PctTransVolbyWeekDay, sum(x))
+print(TotalTransByVol)
+PctTransVolbyWeekDay$PctTransByVol_ByWeekday <- (PctTransVolbyWeekDay$x/9747748)*100
+PctTransVolbyWeekDay
+
+```
+
+# Question 7(c) - Show the percentage of transactions (by transaction volume) by month of the year.
+
+```{r}
+
+TransactionsbyMonth_1 <-MyDataStripped[,c(12,13)]            # Select New_Inv_Mth & TransValue
+TransactionsbyMonth_1 <- 
+  aggregate(TransactionsbyMonth_1$TransactionValue,
+  by=list(TransactionsbyMonth_1$New_Invoice_Month),
+  FUN=sum)
+
+PctofTransactionsbyMonth <- TransactionsbyMonth_1 %>% 
+  mutate(PctOfTrans_ByVol_ByMth = (TransactionsbyMonth_1$x/9747748)*100)
+head(PctofTransactionsbyMonth)
+
+```
+
+
+# Question 7(d) - What was the date with the highest number of transactions from Australia? 
+
+```{r}
+
+
+NoOfTransforAus_Interim <- MyData[,c(1,8,9)]
+NoOfTransforAus_Interim <- distinct(NoOfTransforAus_Interim)  # Remove duplicated rows
+NoOfTransforAus_Interim <- filter(NoOfTransforAus_Interim, Country == "Australia")
+NoOfTransforAus_Interim <- NoOfTransforAus_Interim[,-2]
+
+new7D <- NoOfTransforAus_Interim %>% 
+  group_by(New_Invoice_Date) %>% 
+  summarise(NoofTransByDate=n()) 
+
+subset(new7D, new7D$NoofTransByDate == max(new7D$NoofTransByDate))
+
+```
+
+
+#Question 7(e) The company needs to shut down the website for two consecutive hours for maintenance. What would be the hour of the day to start this so that the distribution is at minimum for the customers? The responsible IT team is available from 7:00 to 20:00 every day
+
+```{r}
+# no_trans_per_hour <- or_df_1 %>%
+ # Select(CustomerID, Invoice_Hour, Invoice_Day_Week
+ # distinct() %>%
+ # group_by(Invoice_Hour) %>%
+ # summarize(sum_trans = sum(n)) %>%
+ # filter(Invoice_Hour >= 7 & Invoice_Hour <= 20)
+# no_trans_per_hour
+# combination_hrs <- comdn
+
+# only_consective_hrs <- function (hrs) {
+  # return(
+   # hrs %>%
+    #  apply(MARGIN = 2), FUN = function(v) {
+    #    diff1 <- diff(v))
+#  if (diff_hrs ++ 3)}
+
+
+
+```
+
+
+Question 12 - On average, how often the costumers comeback to the website for their next shopping? (i.e. what is the average number of days between consecutive shopping) (Optional/Golden question: 18 additional marks!) Hint: 1. A close approximation is also acceptable and you may find diff() function useful.
+
+```{r}
+
+# To find avg day, we would need the following columns:
+# InvoiceNo, CustomerID, New_Invoice_Date.
+
+customer_days <- MyData %>%
+  select(CustomerID, New_Invoice_Date) %>% 
+  distinct() %>%
+  arrange(New_Invoice_Date) %>%
+  group_by(CustomerID) %>%
+  mutate(no_days = sum(diff(New_Invoice_Date)))  %>%
+  arrange(no_days)
+
+customer_days
+mean(customer_days$no_days)
+sprintf("The average number of days between consecutive shopping dates for customers is %.2f days", mean(customer_days$no_days))
+```
+
