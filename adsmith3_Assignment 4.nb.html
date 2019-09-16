@@ -178,6 +178,18 @@ $(document).ready(function () {
 <!-- rnb-text-begin -->
 <p>This is an <a href="http://rmarkdown.rstudio.com">R Markdown</a> Notebook. When you execute code within the notebook, the results appear beneath the code.</p>
 <p>Try executing this chunk by clicking the <em>Run</em> button within the chunk or by placing your cursor inside it and pressing <em>Ctrl+Shift+Enter</em>.</p>
+<pre><code>#{r setup, include=FALSE}
+#knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+#dir.create(&quot;images&quot;)</code></pre>
+<hr />
+<p>This notebook contains the R-script code for asasignment 4. Specifically, the formulation for the Weigelt Corporation assignment.</p>
+<hr />
+<p>If you have not yet installed the lpSolveAPI, use install.packages from the tools menu to do so. Or, just use the code below.</p>
+<ul>
+<li>Note that lines that start with # are comments.</li>
+<li>At any point, use the Console to look for help about a particular function using ?. For ?make.lp()</li>
+<li>To run a chunk, the executable code, select the chunk, and use the Run button above to run that chunk. There are also keyboard shortcuts you can use to run chunks. God help an old man get the problem solved!</li>
+</ul>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
 <!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuaW5zdGFsbC5wYWNrYWdlcyhcImxwU29sdmVBUFwiKVxuYGBgIn0= -->
@@ -189,12 +201,229 @@ $(document).ready(function () {
 <!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<p>Now, load the library we need to do assignment 4.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShscFNvbHZlQVBJKVxuYGBgIn0= -->
+<pre class="r"><code>library(lpSolveAPI)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<hr />
+<p>Let us set up the Weigelt Corporation problem. Note that we have 9 decision variables, and 11 constraints. In the first formulation, we will directly create the objective function and constraints. I used the formulation that I already turned in for assignment 2.</p>
+<p>X1 = total production of large units/day at Plant 1 X2 = total production of medium units/day at Plant 1 X3 = total production of small units/day at Plant 1 X4 = total production of large units/day at Plant 2 X5 = total production of medium units/day at Plant 2 X6 = total production of small units/day at Plant 2 X7 = total production of large units/day at Plant 3 X8 = total production of medium units/day at Plant 3 X9 = total production of small units/day at Plant 3</p>
+<p>LP formulation for this problem:</p>
+<p>We have only 3 plants, but there are 3X3 combinations (large, medium, small sizes)</p>
+<p>Max Z = 420X1 + 360X2 + 300X3 + 420X4 + 360X5 + 300X6 + 420X7 + 360X8 + 300X9</p>
+<p>ST: 1X1 + 1X2 + 1X3 &lt;= 750 1X4 + 1X5 + 1X6 &lt;= 900 1X7 + 1X8 + 1X9 &lt;= 450 20X1 + 15X2 + 12X3 &lt;= 13000 20X4 + 15X5 + 12X6 &lt;=??? 12000 20X7 + 15X8 + 12X9 &lt;= ???5000 1X1 + 1X4 + 1X7 &lt;=??? 900 1X2 + 1X5 + 1X8 &lt;= 1200 1X3 + 1X6 + 1X9 &lt;= 750 1/750(1X1 + 1X2 + 1X3) - 1/900(1X4 + 1X5 + 1X6) = 0 1/750(1X1 + 1X2 + 1X3) - 1/450(1X7 + 1X8 + 1X9) = 0 and, Xij &gt;= 0, (X1&gt;=0, X2&gt;=0, X3&gt;=0, X4&gt;=0. X5&gt;=0, X6&gt;=0, X7&gt;=0, X8&gt;=0, X9&gt;=0)</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBtYWtlIGFuIGxwIG9iamVjdCB3aXRoIDExIGNvbnN0cmFpbnRzIChyb3dzKSBhbmQgOSAoY29sdW1zKSBkZWNpc2lvbiB2YXJpYWJsZXNcbmxwcmVjIDwtIG1ha2UubHAoMTEsIDkpXG4jIE5vdyBjcmVhdGUgdGhlIG9iamVjdGl2ZSBmdW5jdGlvbi4gVGhlIGRlZmF1bHQgaXMgYSBtaW5pbWl6YXRpb24gcHJvYmxlbS4gXG5zZXQub2JqZm4obHByZWMsIGMoNDIwLCAzNjAsIDMwMCw0MjAsMzYwLDMwMCw0MjAsMzUwLDMwMCkpXG4jIEFzIHRoZSBkZWZhdWx0IGlzIGEgbWluaW1pemF0aW9uIHByb2JsZW0sIHdlIGNoYW5nZSB0aGUgZGlyZWN0aW9uIHRvIHNldCBtYXhpbWl6YXRpb25cbmxwLmNvbnRyb2wobHByZWMsc2Vuc2U9J21heCcpXG5gYGAifQ== -->
+<pre class="r"><code># make an lp object with 11 constraints (rows) and 9 (colums) decision variables
+lprec &lt;- make.lp(11, 9)
+# Now create the objective function. The default is a minimization problem. 
+set.objfn(lprec, c(420, 360, 300,420,360,300,420,350,300))
+# As the default is a minimization problem, we change the direction to set maximization
+lp.control(lprec,sense='max')</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiJGBhbnRpLmRlZ2VuYFxuWzFdIFwiZml4ZWR2YXJzXCIgXCJzdGFsbGluZ1wiIFxuXG4kYmFzaXMuY3Jhc2hcblsxXSBcIm5vbmVcIlxuXG4kYmIuZGVwdGhsaW1pdFxuWzFdIC01MFxuXG4kYmIuZmxvb3JmaXJzdFxuWzFdIFwiYXV0b21hdGljXCJcblxuJGJiLnJ1bGVcblsxXSBcInBzZXVkb25vbmludFwiIFwiZ3JlZWR5XCIgICAgICAgXCJkeW5hbWljXCIgICAgICBcInJjb3N0Zml4aW5nXCIgXG5cbiRicmVhay5hdC5maXJzdFxuWzFdIEZBTFNFXG5cbiRicmVhay5hdC52YWx1ZVxuWzFdIDFlKzMwXG5cbiRlcHNpbG9uXG4gICAgICBlcHNiICAgICAgIGVwc2QgICAgICBlcHNlbCAgICAgZXBzaW50IGVwc3BlcnR1cmIgICBlcHNwaXZvdCBcbiAgICAgMWUtMTAgICAgICAxZS0wOSAgICAgIDFlLTEyICAgICAgMWUtMDcgICAgICAxZS0wNSAgICAgIDJlLTA3IFxuXG4kaW1wcm92ZVxuWzFdIFwiZHVhbGZlYXNcIiBcInRoZXRhZ2FwXCJcblxuJGluZmluaXRlXG5bMV0gMWUrMzBcblxuJG1heHBpdm90XG5bMV0gMjUwXG5cbiRtaXAuZ2FwXG5hYnNvbHV0ZSByZWxhdGl2ZSBcbiAgIDFlLTExICAgIDFlLTExIFxuXG4kbmVncmFuZ2VcblsxXSAtMWUrMDZcblxuJG9iai5pbi5iYXNpc1xuWzFdIFRSVUVcblxuJHBpdm90aW5nXG5bMV0gXCJkZXZleFwiICAgIFwiYWRhcHRpdmVcIlxuXG4kcHJlc29sdmVcblsxXSBcIm5vbmVcIlxuXG4kc2NhbGVsaW1pdFxuWzFdIDVcblxuJHNjYWxpbmdcblsxXSBcImdlb21ldHJpY1wiICAgXCJlcXVpbGlicmF0ZVwiIFwiaW50ZWdlcnNcIiAgIFxuXG4kc2Vuc2VcblsxXSBcIm1heGltaXplXCJcblxuJHNpbXBsZXh0eXBlXG5bMV0gXCJkdWFsXCIgICBcInByaW1hbFwiXG5cbiR0aW1lb3V0XG5bMV0gMFxuXG4kdmVyYm9zZVxuWzFdIFwibmV1dHJhbFwiXG4ifQ== -->
+<pre><code>$`anti.degen`
+[1] &quot;fixedvars&quot; &quot;stalling&quot; 
+
+$basis.crash
+[1] &quot;none&quot;
+
+$bb.depthlimit
+[1] -50
+
+$bb.floorfirst
+[1] &quot;automatic&quot;
+
+$bb.rule
+[1] &quot;pseudononint&quot; &quot;greedy&quot;       &quot;dynamic&quot;      &quot;rcostfixing&quot; 
+
+$break.at.first
+[1] FALSE
+
+$break.at.value
+[1] 1e+30
+
+$epsilon
+      epsb       epsd      epsel     epsint epsperturb   epspivot 
+     1e-10      1e-09      1e-12      1e-07      1e-05      2e-07 
+
+$improve
+[1] &quot;dualfeas&quot; &quot;thetagap&quot;
+
+$infinite
+[1] 1e+30
+
+$maxpivot
+[1] 250
+
+$mip.gap
+absolute relative 
+   1e-11    1e-11 
+
+$negrange
+[1] -1e+06
+
+$obj.in.basis
+[1] TRUE
+
+$pivoting
+[1] &quot;devex&quot;    &quot;adaptive&quot;
+
+$presolve
+[1] &quot;none&quot;
+
+$scalelimit
+[1] 5
+
+$scaling
+[1] &quot;geometric&quot;   &quot;equilibrate&quot; &quot;integers&quot;   
+
+$sense
+[1] &quot;maximize&quot;
+
+$simplextype
+[1] &quot;dual&quot;   &quot;primal&quot;
+
+$timeout
+[1] 0
+
+$verbose
+[1] &quot;neutral&quot;</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBBZGQgdGhlIHRocmVlIFBsYW50IGNhcGFjaXR5IGNvbnN0cmFpbnRzIGJ5IGxhcmdlLCBtZWRpdW0sICYgc21hbGwgc2l6ZXNcbiMgRmlyc3Qgc2V0IG9mIGNvbnN0cmFpbnRzIGFyZSBmb3IgUGxhbnQgMVxuYWRkLmNvbnN0cmFpbnQobHByZWMsIGMoMSwgMSwgMSwgMCwgMCwgMCwgMCwgMCwgMCksIFwiPD1cIiwgNzUwKVxuYWRkLmNvbnN0cmFpbnQobHByZWMsIGMoMCwgMCwgMCwgMSwgMSwgMSwgMCwgMCwgMCksIFwiPD1cIiwgOTAwKVxuYWRkLmNvbnN0cmFpbnQobHByZWMsIGMoMCwgMCwgMCwgMCwgMCwgMCwgMSwgMSwgMSksIFwiPD1cIiwgNDUwKVxuIyBBZGQgdGhlIGluLXByb2dyZXNzIHN0b3JhZ2UgcmVxdWlyZW1lbnRzIGNvbnRyYWludCBieSBsYXJnZSwgbWVkaXVtLCAmIHNtYWxsIHNpemVzXG5hZGQuY29uc3RyYWludChscHJlYywgYygyMCwgMTUsIDEyLCAwLCAwLCAwLCAwLCAwLCAwKSwgXCI8PVwiLCAxMzAwMClcbmFkZC5jb25zdHJhaW50KGxwcmVjLCBjKDAsIDAsIDAsIDIwLCAxNSwgMTIsIDAsIDAsIDApLCBcIjw9XCIsIDEyMDAwKVxuYWRkLmNvbnN0cmFpbnQobHByZWMsIGMoMCwgMCwgMCwgMCwgMCwgMCwgMjAsIDE1LCAxMiksIFwiPD1cIiwgNTAwMClcbiMgQWRkIHRoZSBzYWxlcyBmb3JlY2FzdHMgcmVxdWlyZW1lbnRzIGNvbnRyYWludCBieSBsYXJnZSwgbWVkaXVtLCAmIHNtYWxsIHNpemVzXG5hZGQuY29uc3RyYWludChscHJlYywgYygxLCAwLCAwLCAxLCAwLCAwLCAxLCAwLCAwKSwgXCI8PVwiLCA5MDApXG5hZGQuY29uc3RyYWludChscHJlYywgYygwLCAxLCAwLCAwLCAxLCAwLCAwLCAxLCAwKSwgXCI8PVwiLCAxMjAwKVxuYWRkLmNvbnN0cmFpbnQobHByZWMsIGMoMCwgMCwgMSwgMCwgMCwgMSwgMCwgMCwgMSksIFwiPD1cIiwgNzUwKVxuIyBUbyBhdm9pZCBsYXlvZmZzLCBtYW5hZ2VtZW50IG11c3QgbXVzdCB1c2UgdGhlIHNhbWUgJSBvZiBpdHMgZXhjZXNzIGNhcGFjaXR5XG4jIGJ5IGxhcmdlLCBtZWRpdW0sICYgc21hbGwgc2l6ZXNcbmFkZC5jb25zdHJhaW50KGxwcmVjLCBjKDEvNzUwLCAxLzc1MCwgMS83NTAsIC0xLzkwMCwgLTEvOTAwLCAtMS85MDAsIDAsIDAsIDApLCBcIjw9XCIsIDApXG5hZGQuY29uc3RyYWludChscHJlYywgYygxLzc1MCwgMS83NTAsIDEvNzUwLCAwLCAwLCAwLCAtMS80NTAsIC0xLzQ1MCwgLTEvNDUwKSwgXCI8PVwiLCAwKVxuIyBTZXQgYm91bmRzIGZvciB2YXJpYWJsZXMuXG4jIFJlbWVtYmVyIHRoYXQgYWxsIHZhcmlhYmxlcyBoYWQgdG8gYmUgbm9uLW5lZ2F0aXZlLiBXZSBkb24ndCBuZWVkIHRvIHRvIGRvIGl0IGhlcmUsIGFzIHRoYXQgaXMgdGhlIGRlZmF1bHQsXG4jIHdlIGNhbiBzZXQgYm91bmRzIGV4cGxpY2l0bHlcbnNldC5ib3VuZHMobHByZWMsIGxvd2VyID0gYygwLCAwLCAwLCAwLCAwLCAwLCAwLCAwLCAwKSwgY29sdW1ucyA9IGMoMSwgMiwgMywgNCwgNSwgNiwgNywgOCwgOSkpICNOb3QgcmVhbGx5IG5lZWRlZCBidXQgSSB3aWxsIGRvIGl0IGFueXdheS5cbiMgVG8gaWRlbnRpZnkgdGhlIHZhcmlhYmxlcyBhbmQgY29uc3RyYWludHMsIHdlIGNhbiBjcmVhdGUgbGFiZWxzIGZvciB0aGUgY29sdW1ucyAodmFyaWFibGVzKVxuIyBhbmQgcm93cyAoY29uc3RyYWludHMpXG4jIHNldCB2YXJpYWJsZSBuYW1lcyBhbmQgbmFtZSB0aGUgY29uc3RyYWludHMgYnkgd2F5IG9mIGZ1bmN0aW9uXG5Sb3dOYW1lcyA8LSBjKFwiUGxhbnQxX2V4Y2Vzc19jYXBhY2l0eVwiLCBcIlBsYW50Ml9leGNlc3NfY2FwYWNpdHlcIiwgXCJQbGFudDNfZXhjZXNzX2NhcGFjaXR5XCIsXCJQbGFudDFfaW4tcHJvZ2Vzc19zdG9yYWdlXCIsIFwiUGxhbnQyX2luLXByb2dyZXNzX3N0b3JhZ2VcIiwgXCJQbGFudDNfZXhjZXNzX3N0b3JhZ2VcIiwgXCJQbGFudDFfc2FsZXNfZm9yZWNhc3RcIiwgXCJQbGFudDJfc2FsZXNfZm9yZWNhc3RcIiwgXCJQbGFudDNfc2FsZXNfZm9yZWNhc3RcIiwgXCJMYXlvZmZfcHJldmVudGlvbl9QbGFudDFfJl9QbGFudDJcIiwgXCJMYXlvZmZfcHJldmVudGlvbl9QbGFudF8xXyZfUGxhbnQzXCIsIFwibm9uLW5lZ2F0aXZpdHlfY29uc3RyYWludFwiLCBcIm5vbi1uZWdhdGl2aXR5X2NvbnN0cmFpbnRcIiwgXCJub24tbmVnYXRpdml0eV9jb25zdHJhaW50XCIsIFwibm9uLW5lZ2F0aXZpdHlfY29uc3RyYWludFwiLCBcIm5vbi1uZWdhdGl2aXR5X2NvbnN0cmFpbnRcIiwgXCJub24tbmVnYXRpdml0eV9jb25zdHJhaW50XCIsIFwibm9uLW5lZ2F0aXZpdHlfY29uc3RyYWludFwiLCBcIm5vbi1uZWdhdGl2aXR5X2NvbnN0cmFpbnRcIiwgXCJub24tbmVnYXRpdml0eV9jb25zdHJhaW50XCIsIFwibm9uLW5lZ2F0aXZpdHlfY29uc3RyYWludFwiLCBcIm5vbi1uZWdhdGl2aXR5X2NvbnN0cmFpbnRcIilcbkNvbE5hbWVzIDwtIGMoXCJQcm9kdWN0MV9sYXJnZV9zaXplc1wiLCBcIlByb2R1Y3QxX21lZGl1bV9zaXplc1wiLCBcIlBsYW50MV9zbWFsbF9zaXplc1wiLCBcIlBsYW50Ml9sYXJnZV9zaXplc1wiLCBcIlBsYW50Ml9tZWRpdW0gc2l6ZXNcIiwgXCJQbGFudDJfc21hbGxfc2l6ZXNcIiwgXCJQbGFudDNfbGFyZ2Vfc2l6ZXNcIiwgXCJQbGFudF8zX21lZGl1bV9zaXplc1wiLCBcIlBsYW50M19zbWFsbF9zaXplc1wiKVxuZGltbmFtZXMobHByZWMpIDwtIGxpc3QoUm93TmFtZXMsIENvbE5hbWVzKVxuIyBOb3csIHByaW50IG91dCB0aGUgbW9kZWxcbmxwcmVjXG5gYGAifQ== -->
+<pre class="r"><code># Add the three Plant capacity constraints by large, medium, &amp; small sizes
+# First set of constraints are for Plant 1
+add.constraint(lprec, c(1, 1, 1, 0, 0, 0, 0, 0, 0), &quot;&lt;=&quot;, 750)
+add.constraint(lprec, c(0, 0, 0, 1, 1, 1, 0, 0, 0), &quot;&lt;=&quot;, 900)
+add.constraint(lprec, c(0, 0, 0, 0, 0, 0, 1, 1, 1), &quot;&lt;=&quot;, 450)
+# Add the in-progress storage requirements contraint by large, medium, &amp; small sizes
+add.constraint(lprec, c(20, 15, 12, 0, 0, 0, 0, 0, 0), &quot;&lt;=&quot;, 13000)
+add.constraint(lprec, c(0, 0, 0, 20, 15, 12, 0, 0, 0), &quot;&lt;=&quot;, 12000)
+add.constraint(lprec, c(0, 0, 0, 0, 0, 0, 20, 15, 12), &quot;&lt;=&quot;, 5000)
+# Add the sales forecasts requirements contraint by large, medium, &amp; small sizes
+add.constraint(lprec, c(1, 0, 0, 1, 0, 0, 1, 0, 0), &quot;&lt;=&quot;, 900)
+add.constraint(lprec, c(0, 1, 0, 0, 1, 0, 0, 1, 0), &quot;&lt;=&quot;, 1200)
+add.constraint(lprec, c(0, 0, 1, 0, 0, 1, 0, 0, 1), &quot;&lt;=&quot;, 750)
+# To avoid layoffs, management must must use the same % of its excess capacity
+# by large, medium, &amp; small sizes
+add.constraint(lprec, c(1/750, 1/750, 1/750, -1/900, -1/900, -1/900, 0, 0, 0), &quot;&lt;=&quot;, 0)
+add.constraint(lprec, c(1/750, 1/750, 1/750, 0, 0, 0, -1/450, -1/450, -1/450), &quot;&lt;=&quot;, 0)
+# Set bounds for variables.
+# Remember that all variables had to be non-negative. We don't need to to do it here, as that is the default,
+# we can set bounds explicitly
+set.bounds(lprec, lower = c(0, 0, 0, 0, 0, 0, 0, 0, 0), columns = c(1, 2, 3, 4, 5, 6, 7, 8, 9)) #Not really needed but I will do it anyway.
+# To identify the variables and constraints, we can create labels for the columns (variables)
+# and rows (constraints)
+# set variable names and name the constraints by way of function
+RowNames &lt;- c(&quot;Plant1_excess_capacity&quot;, &quot;Plant2_excess_capacity&quot;, &quot;Plant3_excess_capacity&quot;,&quot;Plant1_in-progess_storage&quot;, &quot;Plant2_in-progress_storage&quot;, &quot;Plant3_excess_storage&quot;, &quot;Plant1_sales_forecast&quot;, &quot;Plant2_sales_forecast&quot;, &quot;Plant3_sales_forecast&quot;, &quot;Layoff_prevention_Plant1_&amp;_Plant2&quot;, &quot;Layoff_prevention_Plant_1_&amp;_Plant3&quot;, &quot;non-negativity_constraint&quot;, &quot;non-negativity_constraint&quot;, &quot;non-negativity_constraint&quot;, &quot;non-negativity_constraint&quot;, &quot;non-negativity_constraint&quot;, &quot;non-negativity_constraint&quot;, &quot;non-negativity_constraint&quot;, &quot;non-negativity_constraint&quot;, &quot;non-negativity_constraint&quot;, &quot;non-negativity_constraint&quot;, &quot;non-negativity_constraint&quot;)
+ColNames &lt;- c(&quot;Product1_large_sizes&quot;, &quot;Product1_medium_sizes&quot;, &quot;Plant1_small_sizes&quot;, &quot;Plant2_large_sizes&quot;, &quot;Plant2_medium sizes&quot;, &quot;Plant2_small_sizes&quot;, &quot;Plant3_large_sizes&quot;, &quot;Plant_3_medium_sizes&quot;, &quot;Plant3_small_sizes&quot;)
+dimnames(lprec) &lt;- list(RowNames, ColNames)
+# Now, print out the model
+lprec</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiTW9kZWwgbmFtZTogXG4gIGEgbGluZWFyIHByb2dyYW0gd2l0aCA5IGRlY2lzaW9uIHZhcmlhYmxlcyBhbmQgMjIgY29uc3RyYWludHNcbiJ9 -->
+<pre><code>Model name: 
+  a linear program with 9 decision variables and 22 constraints</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBUaGUgbW9kZWwgY2FuIGFsc28gYmUgc2F2ZWQgdG8gYSBmaWxlXG53cml0ZS5scChscHJlYywgZmlsZW5hbWUgPSBcImFkc21pdGgzX0Fzc2lnbm1lbnQ0XCIsIHR5cGUgPSBcImxwXCIpXG5gYGAifQ== -->
+<pre class="r"><code># The model can also be saved to a file
+write.lp(lprec, filename = &quot;adsmith3_Assignment4&quot;, type = &quot;lp&quot;)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>We now solve the above LP problem</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc29sdmUobHByZWMpXG5gYGAifQ== -->
+<pre class="r"><code>solve(lprec)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIDBcbiJ9 -->
+<pre><code>[1] 0</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>The output above doesn’t indicate that the answer is 0, but that there was a successful solution We now output the value of the objective function, and the variables</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZ2V0Lm9iamVjdGl2ZShscHJlYylcbmBgYCJ9 -->
+<pre class="r"><code>get.objective(lprec)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIDY5ODAwMFxuIn0= -->
+<pre><code>[1] 698000</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZ2V0LnZhcmlhYmxlcyhscHJlYylcbmBgYCJ9 -->
+<pre class="r"><code>get.variables(lprec)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIDUxNi42NjY3IDE3Ny43Nzc4ICAgMC4wMDAwICAgMC4wMDAwIDUzMy4zMzMzIDMzMy4zMzMzICAgMC4wMDAwICAgMC4wMDAwIDQxNi42NjY3XG4ifQ== -->
+<pre><code>[1] 516.6667 177.7778   0.0000   0.0000 533.3333 333.3333   0.0000   0.0000 416.6667</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>The solution shows that the profit is $698,000, with the first variable value equal to 516.6667, the second variable value equal to 177.7778, the thrid variable value equal to 0, the fourth variable value equal to 0, the fifth variable value equal to 533.3333, the sixth variable value equal to 333.3333, the seventh variable value equal to 0, the eighth variable value equal to 0, and the ninth variable value equal to 416.6667. One difficulty in reading the output is that lpsolveAPI will not write the variable name next to the solution. As such, one should remember that the variables values are output in the order in which it shows up in the lp formulation.</p>
+<p>To add the variable names and solutions:</p>
+<p>Max profit = $698,000</p>
+<p>X1 = total production of large units/day at Plant 1 = 516.6667 (516.7 units) X2 = total production of medium units/day at Plant 1 = 177.7778 (177.8 units) X3 = total production of small units/day at Plant 1 = 0.0 (none) X4 = total production of large units/day at Plant 2 = 0.0 (none) X5 = total production of medium units/day at Plant 2 = 533.3333 (533.3 units) X6 = total production of small units/day at Plant 2 = 333.3333 (333.3 units) X7 = total production of large units/day at Plant 3 = 0.0 (none) X8 = total production of medium units/day at Plant 3 = 0.0 (none) X9 = total production of small units/day at Plant 3 = 416.6667 (416.7 units)</p>
+<p>Before we look at other output values, let us consider using a different method to input the problem formuation. We will use the lp format by creating a text file that contains the Weigelt problem formulation. We also outputted an lp file using the write.lp statement above. Please now look at the adsmith3_Assignment4.lp file. In RStudio, you can double click on the file in the Files list on the right pane.</p>
+<hr />
+<p>We now read the lp formulation using an lp file. To read about about the lp format for files, you can read the documentation at <a href="http://lpsolve.sourceforge.net/5.5/lp-format.htm" class="uri">http://lpsolve.sourceforge.net/5.5/lp-format.htm</a>.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxud3JpdGUubHAobHByZWMsIGZpbGVuYW1lID0gXCJhZHNtaXRoM19Bc3NpZ25tZW50NC5scFwiLCB0eXBlID0gXCJscFwiKVxueCA8LSByZWFkLmxwKFwiYWRzbWl0aDNfQXNzaWdubWVudDQubHBcIikgIyBjcmVhdGUgYW4gbHAgb2JqZWN0IHhcbmBgYCJ9 -->
+<pre class="r"><code>write.lp(lprec, filename = &quot;adsmith3_Assignment4.lp&quot;, type = &quot;lp&quot;)
+x &lt;- read.lp(&quot;adsmith3_Assignment4.lp&quot;) # create an lp object x</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiRXJyb3IgaW4gcmVhZC5scChcImFkc21pdGgzX0Fzc2lnbm1lbnQ0LmxwXCIpIDogXG4gIGNvdWxkIG5vdCBpbnRlcnByZXQgYWRzbWl0aDNfQXNzaWdubWVudDQubHAgYXMgYW4gbHAgZmlsZVxuIn0= -->
+<pre><code>Error in read.lp(&quot;adsmith3_Assignment4.lp&quot;) : 
+  could not interpret adsmith3_Assignment4.lp as an lp file</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Solve the lp model</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc29sdmUoeClcbmBgYCJ9 -->
+<pre class="r"><code>solve(x)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIDBcbiJ9 -->
+<pre><code>[1] 0</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZ2V0Lm9iamVjdGl2ZSh4KSAgICAgICAgIyBnZXQgb2JqZWN0aXZlIHZhbHVlXG5gYGAifQ== -->
+<pre class="r"><code>get.objective(x)        # get objective value</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIDM2XG4ifQ== -->
+<pre><code>[1] 36</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZ2V0LnZhcmlhYmxlcyh4KSAgICAgICAgIyBnZXQgdmFsdWVzIG9mIGRlY2lzaW9uIHZhcmlhYmxlc1xuYGBgIn0= -->
+<pre class="r"><code>get.variables(x)        # get values of decision variables</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIDIgNlxuIn0= -->
+<pre><code>[1] 2 6</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZ2V0LmNvbnN0cmFpbnRzKHgpICAgICAgIyBnZXQgY29uc3RyYWludCBSSFMgdmFsdWVzXG5gYGAifQ== -->
+<pre class="r"><code>get.constraints(x)      # get constraint RHS values</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdICAyIDEyIDE4XG4ifQ== -->
+<pre><code>[1]  2 12 18</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>If you run all the chunks above, you can display the text, code, and output in an html file. Click on the 4.1-WBC.nb.html file in your directory from withing RStudio.</p>
+<p>You can also get the output in word, or pdf form by knitting the output. Use the Knit Document option from the File menu, or use the drop down menu from the Preview option above.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
 <p>Add a new chunk by clicking the <em>Insert Chunk</em> button on the toolbar or by pressing <em>Ctrl+Alt+I</em>.</p>
 <p>When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the <em>Preview</em> button or press <em>Ctrl+Shift+K</em> to preview the HTML file).</p>
 <p>The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike <em>Knit</em>, <em>Preview</em> does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.</p>
 <!-- rnb-text-end -->
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogIlIgTm90ZWJvb2siDQpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sNCi0tLQ0KDQpUaGlzIGlzIGFuIFtSIE1hcmtkb3duXShodHRwOi8vcm1hcmtkb3duLnJzdHVkaW8uY29tKSBOb3RlYm9vay4gV2hlbiB5b3UgZXhlY3V0ZSBjb2RlIHdpdGhpbiB0aGUgbm90ZWJvb2ssIHRoZSByZXN1bHRzIGFwcGVhciBiZW5lYXRoIHRoZSBjb2RlLiANCg0KVHJ5IGV4ZWN1dGluZyB0aGlzIGNodW5rIGJ5IGNsaWNraW5nIHRoZSAqUnVuKiBidXR0b24gd2l0aGluIHRoZSBjaHVuayBvciBieSBwbGFjaW5nIHlvdXIgY3Vyc29yIGluc2lkZSBpdCBhbmQgcHJlc3NpbmcgKkN0cmwrU2hpZnQrRW50ZXIqLiANCg0KYGBge3J9DQpwbG90KGNhcnMpDQpgYGANCg0KQWRkIGEgbmV3IGNodW5rIGJ5IGNsaWNraW5nIHRoZSAqSW5zZXJ0IENodW5rKiBidXR0b24gb24gdGhlIHRvb2xiYXIgb3IgYnkgcHJlc3NpbmcgKkN0cmwrQWx0K0kqLg0KDQpXaGVuIHlvdSBzYXZlIHRoZSBub3RlYm9vaywgYW4gSFRNTCBmaWxlIGNvbnRhaW5pbmcgdGhlIGNvZGUgYW5kIG91dHB1dCB3aWxsIGJlIHNhdmVkIGFsb25nc2lkZSBpdCAoY2xpY2sgdGhlICpQcmV2aWV3KiBidXR0b24gb3IgcHJlc3MgKkN0cmwrU2hpZnQrSyogdG8gcHJldmlldyB0aGUgSFRNTCBmaWxlKS4NCg0KVGhlIHByZXZpZXcgc2hvd3MgeW91IGEgcmVuZGVyZWQgSFRNTCBjb3B5IG9mIHRoZSBjb250ZW50cyBvZiB0aGUgZWRpdG9yLiBDb25zZXF1ZW50bHksIHVubGlrZSAqS25pdCosICpQcmV2aWV3KiBkb2VzIG5vdCBydW4gYW55IFIgY29kZSBjaHVua3MuIEluc3RlYWQsIHRoZSBvdXRwdXQgb2YgdGhlIGNodW5rIHdoZW4gaXQgd2FzIGxhc3QgcnVuIGluIHRoZSBlZGl0b3IgaXMgZGlzcGxheWVkLg0K</div>
+<div id="rmd-source-code">LS0tDQp0aXRsZTogIlIgTm90ZWJvb2siDQpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sNCi0tLQ0KDQpUaGlzIGlzIGFuIFtSIE1hcmtkb3duXShodHRwOi8vcm1hcmtkb3duLnJzdHVkaW8uY29tKSBOb3RlYm9vay4gV2hlbiB5b3UgZXhlY3V0ZSBjb2RlIHdpdGhpbiB0aGUgbm90ZWJvb2ssIHRoZSByZXN1bHRzIGFwcGVhciBiZW5lYXRoIHRoZSBjb2RlLiANCg0KVHJ5IGV4ZWN1dGluZyB0aGlzIGNodW5rIGJ5IGNsaWNraW5nIHRoZSAqUnVuKiBidXR0b24gd2l0aGluIHRoZSBjaHVuayBvciBieSBwbGFjaW5nIHlvdXIgY3Vyc29yIGluc2lkZSBpdCBhbmQgcHJlc3NpbmcgKkN0cmwrU2hpZnQrRW50ZXIqLiANCg0KLS0tDQp0aXRsZTogIldlaWdlbHQgRXhhbXBsZSINCm91dHB1dDogDQogIGh0bWxfbm90ZWJvb2s6IA0KICAgIHRoZW1lOiBjZXJ1bGVhbg0KICAgIGhpZ2hsaWdodDogdGV4dG1hdGUNCi0tLQ0KDQpgYGANCiN7ciBzZXR1cCwgaW5jbHVkZT1GQUxTRX0NCiNrbml0cjo6b3B0c19jaHVuayRzZXQod2FybmluZyA9IEZBTFNFLCBtZXNzYWdlID0gRkFMU0UpDQojZGlyLmNyZWF0ZSgiaW1hZ2VzIikNCmBgYA0KDQoqKioNCg0KVGhpcyBub3RlYm9vayBjb250YWlucyB0aGUgUi1zY3JpcHQgY29kZSBmb3IgYXNhc2lnbm1lbnQgNC4gU3BlY2lmaWNhbGx5LCB0aGUgZm9ybXVsYXRpb24gZm9yIHRoZSBXZWlnZWx0IENvcnBvcmF0aW9uIGFzc2lnbm1lbnQuDQoNCioqKg0KDQpJZiB5b3UgaGF2ZSBub3QgeWV0IGluc3RhbGxlZCB0aGUgbHBTb2x2ZUFQSSwgdXNlIGluc3RhbGwucGFja2FnZXMgZnJvbSB0aGUgdG9vbHMgbWVudSB0byBkbyBzby4gT3IsIGp1c3QgdXNlIHRoZSBjb2RlIGJlbG93Lg0KDQoqIE5vdGUgdGhhdCBsaW5lcyB0aGF0IHN0YXJ0IHdpdGggIyBhcmUgY29tbWVudHMuIA0KKiBBdCBhbnkgcG9pbnQsIHVzZSB0aGUgQ29uc29sZSB0byBsb29rIGZvciBoZWxwIGFib3V0IGEgcGFydGljdWxhciBmdW5jdGlvbiB1c2luZyA/LiBGb3IgP21ha2UubHAoKSANCiogVG8gcnVuIGEgY2h1bmssIHRoZSBleGVjdXRhYmxlIGNvZGUsIHNlbGVjdCB0aGUgY2h1bmssIGFuZCB1c2UgdGhlIFJ1biBidXR0b24gYWJvdmUgdG8gcnVuIHRoYXQgY2h1bmsuIFRoZXJlIGFyZSBhbHNvIGtleWJvYXJkIHNob3J0Y3V0cyB5b3UgY2FuIHVzZSB0byBydW4gY2h1bmtzLg0KR29kIGhlbHAgYW4gb2xkIG1hbiBnZXQgdGhlIHByb2JsZW0gc29sdmVkIQ0KDQpgYGB7cn0NCmluc3RhbGwucGFja2FnZXMoImxwU29sdmVBUCIpDQpgYGANCg0KTm93LCBsb2FkIHRoZSBsaWJyYXJ5IHdlIG5lZWQgdG8gZG8gYXNzaWdubWVudCA0Lg0KYGBge3J9DQpsaWJyYXJ5KGxwU29sdmVBUEkpDQoNCmBgYA0KDQoqKioNCkxldCB1cyBzZXQgdXAgdGhlIFdlaWdlbHQgQ29ycG9yYXRpb24gcHJvYmxlbS4gTm90ZSB0aGF0IHdlIGhhdmUgOSBkZWNpc2lvbiB2YXJpYWJsZXMsIGFuZCAxMSBjb25zdHJhaW50cy4NCkluIHRoZSBmaXJzdCBmb3JtdWxhdGlvbiwgd2Ugd2lsbCBkaXJlY3RseSBjcmVhdGUgdGhlIG9iamVjdGl2ZSBmdW5jdGlvbiBhbmQgY29uc3RyYWludHMuDQpJIHVzZWQgdGhlIGZvcm11bGF0aW9uIHRoYXQgSSBhbHJlYWR5IHR1cm5lZCBpbiBmb3IgYXNzaWdubWVudCAyLg0KDQpYMSA9IHRvdGFsIHByb2R1Y3Rpb24gb2YgbGFyZ2UgdW5pdHMvZGF5IGF0IFBsYW50IDENClgyID0gdG90YWwgcHJvZHVjdGlvbiBvZiBtZWRpdW0gdW5pdHMvZGF5IGF0IFBsYW50IDENClgzID0gdG90YWwgcHJvZHVjdGlvbiBvZiBzbWFsbCB1bml0cy9kYXkgYXQgUGxhbnQgMQ0KWDQgPSB0b3RhbCBwcm9kdWN0aW9uIG9mIGxhcmdlIHVuaXRzL2RheSBhdCBQbGFudCAyIA0KWDUgPSB0b3RhbCBwcm9kdWN0aW9uIG9mIG1lZGl1bSB1bml0cy9kYXkgYXQgUGxhbnQgMg0KWDYgPSB0b3RhbCBwcm9kdWN0aW9uIG9mIHNtYWxsIHVuaXRzL2RheSBhdCBQbGFudCAyDQpYNyA9IHRvdGFsIHByb2R1Y3Rpb24gb2YgbGFyZ2UgdW5pdHMvZGF5IGF0IFBsYW50IDMgDQpYOCA9IHRvdGFsIHByb2R1Y3Rpb24gb2YgbWVkaXVtIHVuaXRzL2RheSBhdCBQbGFudCAzDQpYOSA9IHRvdGFsIHByb2R1Y3Rpb24gb2Ygc21hbGwgdW5pdHMvZGF5IGF0IFBsYW50IDMNCg0KTFAgZm9ybXVsYXRpb24gZm9yIHRoaXMgcHJvYmxlbToNCg0KV2UgaGF2ZSBvbmx5IDMgcGxhbnRzLCBidXQgdGhlcmUgYXJlIDNYMyBjb21iaW5hdGlvbnMgKGxhcmdlLCBtZWRpdW0sIHNtYWxsIHNpemVzKQ0KDQpNYXggWiA9IDQyMFgxICsgMzYwWDIgKyAzMDBYMyArIDQyMFg0ICsgMzYwWDUgKyAzMDBYNiArIDQyMFg3ICsgMzYwWDggKyAzMDBYOQ0KDQpTVDoNCgkJICAgICAgICAgICAgICAgICAgICAgICAgMVgxICsgMVgyICsgMVgzIDw9IDc1MA0KICAgICAgICAgICAgICAgICAgICAgICAgICAgIDFYNCArIDFYNSArIDFYNiA8PSA5MDANCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAxWDcgKyAxWDggKyAxWDkgPD0gNDUwDQogICAgICAgICAgICAgICAgICAgICAgICAgICAgMjBYMSArIDE1WDIgKyAxMlgzIDw9IDEzMDAwDQogICAgICAgICAgICAgICAgICAgICAgICAgICAgMjBYNCArIDE1WDUgKyAxMlg2IDw9Pz8/IDEyMDAwDQogICAgICAgICAgICAgICAgICAgICAgICAgICAgMjBYNyArIDE1WDggKyAxMlg5IDw9ID8/PzUwMDANCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAxWDEgKyAxWDQgKyAxWDcgPD0/Pz8gOTAwDQogICAgICAgICAgICAgICAgICAgICAgICAgICAgMVgyICsgMVg1ICsgMVg4IDw9IDEyMDANCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAxWDMgKyAxWDYgKyAxWDkgIDw9IDc1MA0KICAgICAgICAgICAgICAgICAgICAgICAgICAgIDEvNzUwKDFYMSArIDFYMiArIDFYMykgLSAxLzkwMCgxWDQgKyAxWDUgKyAxWDYpID0gMA0KICAgICAgICAgICAgICAgICAgICAgICAgICAgIDEvNzUwKDFYMSArIDFYMiArIDFYMykgLSAxLzQ1MCgxWDcgKyAxWDggKyAxWDkpID0gMA0KICAgICAgICAgICAgYW5kLCBYaWogPj0gMCwgKFgxPj0wLCBYMj49MCwgWDM+PTAsIFg0Pj0wLiBYNT49MCwgWDY+PTAsIFg3Pj0wLCBYOD49MCwgWDk+PTApDQoNCiAgICANCg0KYGBge3J9DQojIG1ha2UgYW4gbHAgb2JqZWN0IHdpdGggMTEgY29uc3RyYWludHMgKHJvd3MpIGFuZCA5IChjb2x1bXMpIGRlY2lzaW9uIHZhcmlhYmxlcw0KbHByZWMgPC0gbWFrZS5scCgxMSwgOSkNCiMgTm93IGNyZWF0ZSB0aGUgb2JqZWN0aXZlIGZ1bmN0aW9uLiBUaGUgZGVmYXVsdCBpcyBhIG1pbmltaXphdGlvbiBwcm9ibGVtLiANCnNldC5vYmpmbihscHJlYywgYyg0MjAsIDM2MCwgMzAwLDQyMCwzNjAsMzAwLDQyMCwzNTAsMzAwKSkNCiMgQXMgdGhlIGRlZmF1bHQgaXMgYSBtaW5pbWl6YXRpb24gcHJvYmxlbSwgd2UgY2hhbmdlIHRoZSBkaXJlY3Rpb24gdG8gc2V0IG1heGltaXphdGlvbg0KbHAuY29udHJvbChscHJlYyxzZW5zZT0nbWF4JykNCiMgQWRkIHRoZSB0aHJlZSBQbGFudCBjYXBhY2l0eSBjb25zdHJhaW50cyBieSBsYXJnZSwgbWVkaXVtLCAmIHNtYWxsIHNpemVzDQojIEZpcnN0IHNldCBvZiBjb25zdHJhaW50cyBhcmUgZm9yIFBsYW50IDENCmFkZC5jb25zdHJhaW50KGxwcmVjLCBjKDEsIDEsIDEsIDAsIDAsIDAsIDAsIDAsIDApLCAiPD0iLCA3NTApDQphZGQuY29uc3RyYWludChscHJlYywgYygwLCAwLCAwLCAxLCAxLCAxLCAwLCAwLCAwKSwgIjw9IiwgOTAwKQ0KYWRkLmNvbnN0cmFpbnQobHByZWMsIGMoMCwgMCwgMCwgMCwgMCwgMCwgMSwgMSwgMSksICI8PSIsIDQ1MCkNCiMgQWRkIHRoZSBpbi1wcm9ncmVzcyBzdG9yYWdlIHJlcXVpcmVtZW50cyBjb250cmFpbnQgYnkgbGFyZ2UsIG1lZGl1bSwgJiBzbWFsbCBzaXplcw0KYWRkLmNvbnN0cmFpbnQobHByZWMsIGMoMjAsIDE1LCAxMiwgMCwgMCwgMCwgMCwgMCwgMCksICI8PSIsIDEzMDAwKQ0KYWRkLmNvbnN0cmFpbnQobHByZWMsIGMoMCwgMCwgMCwgMjAsIDE1LCAxMiwgMCwgMCwgMCksICI8PSIsIDEyMDAwKQ0KYWRkLmNvbnN0cmFpbnQobHByZWMsIGMoMCwgMCwgMCwgMCwgMCwgMCwgMjAsIDE1LCAxMiksICI8PSIsIDUwMDApDQojIEFkZCB0aGUgc2FsZXMgZm9yZWNhc3RzIHJlcXVpcmVtZW50cyBjb250cmFpbnQgYnkgbGFyZ2UsIG1lZGl1bSwgJiBzbWFsbCBzaXplcw0KYWRkLmNvbnN0cmFpbnQobHByZWMsIGMoMSwgMCwgMCwgMSwgMCwgMCwgMSwgMCwgMCksICI8PSIsIDkwMCkNCmFkZC5jb25zdHJhaW50KGxwcmVjLCBjKDAsIDEsIDAsIDAsIDEsIDAsIDAsIDEsIDApLCAiPD0iLCAxMjAwKQ0KYWRkLmNvbnN0cmFpbnQobHByZWMsIGMoMCwgMCwgMSwgMCwgMCwgMSwgMCwgMCwgMSksICI8PSIsIDc1MCkNCiMgVG8gYXZvaWQgbGF5b2ZmcywgbWFuYWdlbWVudCBtdXN0IG11c3QgdXNlIHRoZSBzYW1lICUgb2YgaXRzIGV4Y2VzcyBjYXBhY2l0eQ0KIyBieSBsYXJnZSwgbWVkaXVtLCAmIHNtYWxsIHNpemVzDQphZGQuY29uc3RyYWludChscHJlYywgYygxLzc1MCwgMS83NTAsIDEvNzUwLCAtMS85MDAsIC0xLzkwMCwgLTEvOTAwLCAwLCAwLCAwKSwgIjw9IiwgMCkNCmFkZC5jb25zdHJhaW50KGxwcmVjLCBjKDEvNzUwLCAxLzc1MCwgMS83NTAsIDAsIDAsIDAsIC0xLzQ1MCwgLTEvNDUwLCAtMS80NTApLCAiPD0iLCAwKQ0KIyBTZXQgYm91bmRzIGZvciB2YXJpYWJsZXMuDQojIFJlbWVtYmVyIHRoYXQgYWxsIHZhcmlhYmxlcyBoYWQgdG8gYmUgbm9uLW5lZ2F0aXZlLiBXZSBkb24ndCBuZWVkIHRvIHRvIGRvIGl0IGhlcmUsIGFzIHRoYXQgaXMgdGhlIGRlZmF1bHQsDQojIHdlIGNhbiBzZXQgYm91bmRzIGV4cGxpY2l0bHkNCnNldC5ib3VuZHMobHByZWMsIGxvd2VyID0gYygwLCAwLCAwLCAwLCAwLCAwLCAwLCAwLCAwKSwgY29sdW1ucyA9IGMoMSwgMiwgMywgNCwgNSwgNiwgNywgOCwgOSkpICNOb3QgcmVhbGx5IG5lZWRlZCBidXQgSSB3aWxsIGRvIGl0IGFueXdheS4NCiMgVG8gaWRlbnRpZnkgdGhlIHZhcmlhYmxlcyBhbmQgY29uc3RyYWludHMsIHdlIGNhbiBjcmVhdGUgbGFiZWxzIGZvciB0aGUgY29sdW1ucyAodmFyaWFibGVzKQ0KIyBhbmQgcm93cyAoY29uc3RyYWludHMpDQojIHNldCB2YXJpYWJsZSBuYW1lcyBhbmQgbmFtZSB0aGUgY29uc3RyYWludHMgYnkgd2F5IG9mIGZ1bmN0aW9uDQpSb3dOYW1lcyA8LSBjKCJQbGFudDFfZXhjZXNzX2NhcGFjaXR5IiwgIlBsYW50Ml9leGNlc3NfY2FwYWNpdHkiLCAiUGxhbnQzX2V4Y2Vzc19jYXBhY2l0eSIsIlBsYW50MV9pbi1wcm9nZXNzX3N0b3JhZ2UiLCAiUGxhbnQyX2luLXByb2dyZXNzX3N0b3JhZ2UiLCAiUGxhbnQzX2V4Y2Vzc19zdG9yYWdlIiwgIlBsYW50MV9zYWxlc19mb3JlY2FzdCIsICJQbGFudDJfc2FsZXNfZm9yZWNhc3QiLCAiUGxhbnQzX3NhbGVzX2ZvcmVjYXN0IiwgIkxheW9mZl9wcmV2ZW50aW9uX1BsYW50MV8mX1BsYW50MiIsICJMYXlvZmZfcHJldmVudGlvbl9QbGFudF8xXyZfUGxhbnQzIiwgIm5vbi1uZWdhdGl2aXR5X2NvbnN0cmFpbnQiLCAibm9uLW5lZ2F0aXZpdHlfY29uc3RyYWludCIsICJub24tbmVnYXRpdml0eV9jb25zdHJhaW50IiwgIm5vbi1uZWdhdGl2aXR5X2NvbnN0cmFpbnQiLCAibm9uLW5lZ2F0aXZpdHlfY29uc3RyYWludCIsICJub24tbmVnYXRpdml0eV9jb25zdHJhaW50IiwgIm5vbi1uZWdhdGl2aXR5X2NvbnN0cmFpbnQiLCAibm9uLW5lZ2F0aXZpdHlfY29uc3RyYWludCIsICJub24tbmVnYXRpdml0eV9jb25zdHJhaW50IiwgIm5vbi1uZWdhdGl2aXR5X2NvbnN0cmFpbnQiLCAibm9uLW5lZ2F0aXZpdHlfY29uc3RyYWludCIpDQpDb2xOYW1lcyA8LSBjKCJQcm9kdWN0MV9sYXJnZV9zaXplcyIsICJQcm9kdWN0MV9tZWRpdW1fc2l6ZXMiLCAiUGxhbnQxX3NtYWxsX3NpemVzIiwgIlBsYW50Ml9sYXJnZV9zaXplcyIsICJQbGFudDJfbWVkaXVtIHNpemVzIiwgIlBsYW50Ml9zbWFsbF9zaXplcyIsICJQbGFudDNfbGFyZ2Vfc2l6ZXMiLCAiUGxhbnRfM19tZWRpdW1fc2l6ZXMiLCAiUGxhbnQzX3NtYWxsX3NpemVzIikNCmRpbW5hbWVzKGxwcmVjKSA8LSBsaXN0KFJvd05hbWVzLCBDb2xOYW1lcykNCiMgTm93LCBwcmludCBvdXQgdGhlIG1vZGVsDQpscHJlYw0KIyBUaGUgbW9kZWwgY2FuIGFsc28gYmUgc2F2ZWQgdG8gYSBmaWxlDQp3cml0ZS5scChscHJlYywgZmlsZW5hbWUgPSAiYWRzbWl0aDNfQXNzaWdubWVudDQiLCB0eXBlID0gImxwIikNCmBgYA0KDQpXZSBub3cgc29sdmUgdGhlIGFib3ZlIExQIHByb2JsZW0NCmBgYHtyfQ0Kc29sdmUobHByZWMpDQpgYGANCg0KVGhlIG91dHB1dCBhYm92ZSBkb2Vzbid0IGluZGljYXRlIHRoYXQgdGhlIGFuc3dlciBpcyAwLCBidXQgdGhhdCB0aGVyZSB3YXMgYSBzdWNjZXNzZnVsIHNvbHV0aW9uDQpXZSBub3cgb3V0cHV0IHRoZSB2YWx1ZSBvZiB0aGUgb2JqZWN0aXZlIGZ1bmN0aW9uLCBhbmQgdGhlIHZhcmlhYmxlcw0KYGBge3J9DQpnZXQub2JqZWN0aXZlKGxwcmVjKQ0KZ2V0LnZhcmlhYmxlcyhscHJlYykNCmBgYA0KDQpUaGUgc29sdXRpb24gc2hvd3MgdGhhdCB0aGUgcHJvZml0IGlzICQ2OTgsMDAwLCB3aXRoIHRoZSBmaXJzdCB2YXJpYWJsZSB2YWx1ZSBlcXVhbCB0byA1MTYuNjY2NywgdGhlIHNlY29uZCB2YXJpYWJsZSB2YWx1ZSBlcXVhbCB0byAxNzcuNzc3OCwgdGhlIHRocmlkIHZhcmlhYmxlIHZhbHVlIGVxdWFsIHRvIDAsIHRoZSBmb3VydGggdmFyaWFibGUgdmFsdWUgZXF1YWwgdG8gMCwgdGhlIGZpZnRoIHZhcmlhYmxlIHZhbHVlIGVxdWFsIHRvIDUzMy4zMzMzLCB0aGUgc2l4dGggdmFyaWFibGUgdmFsdWUgZXF1YWwgdG8gMzMzLjMzMzMsIHRoZSBzZXZlbnRoIHZhcmlhYmxlIHZhbHVlIGVxdWFsIHRvIDAsIHRoZSBlaWdodGggdmFyaWFibGUgdmFsdWUgZXF1YWwgdG8gMCwgYW5kIHRoZSBuaW50aCB2YXJpYWJsZSB2YWx1ZSBlcXVhbCB0byA0MTYuNjY2Ny4NCk9uZSBkaWZmaWN1bHR5IGluIHJlYWRpbmcgdGhlIG91dHB1dCBpcyB0aGF0IGxwc29sdmVBUEkgd2lsbCBub3Qgd3JpdGUgdGhlIHZhcmlhYmxlIG5hbWUgbmV4dCB0byB0aGUgc29sdXRpb24uIEFzIHN1Y2gsIG9uZSBzaG91bGQgcmVtZW1iZXIgdGhhdCB0aGUgdmFyaWFibGVzIHZhbHVlcyBhcmUgb3V0cHV0IGluIHRoZSBvcmRlciBpbiB3aGljaCBpdCBzaG93cyB1cCBpbiB0aGUgbHAgZm9ybXVsYXRpb24uIA0KDQpUbyBhZGQgdGhlIHZhcmlhYmxlIG5hbWVzIGFuZCBzb2x1dGlvbnM6DQoNCk1heCBwcm9maXQgPSAkNjk4LDAwMA0KDQpYMSA9IHRvdGFsIHByb2R1Y3Rpb24gb2YgbGFyZ2UgdW5pdHMvZGF5IGF0IFBsYW50IDEgPSA1MTYuNjY2NyAoNTE2LjcgdW5pdHMpDQpYMiA9IHRvdGFsIHByb2R1Y3Rpb24gb2YgbWVkaXVtIHVuaXRzL2RheSBhdCBQbGFudCAxID0gMTc3Ljc3NzggKDE3Ny44IHVuaXRzKQ0KWDMgPSB0b3RhbCBwcm9kdWN0aW9uIG9mIHNtYWxsIHVuaXRzL2RheSBhdCBQbGFudCAxID0gMC4wIChub25lKQ0KWDQgPSB0b3RhbCBwcm9kdWN0aW9uIG9mIGxhcmdlIHVuaXRzL2RheSBhdCBQbGFudCAyID0gMC4wICAobm9uZSkNClg1ID0gdG90YWwgcHJvZHVjdGlvbiBvZiBtZWRpdW0gdW5pdHMvZGF5IGF0IFBsYW50IDIgPSA1MzMuMzMzMyAoNTMzLjMgdW5pdHMpDQpYNiA9IHRvdGFsIHByb2R1Y3Rpb24gb2Ygc21hbGwgdW5pdHMvZGF5IGF0IFBsYW50IDIgPSAzMzMuMzMzMyAoMzMzLjMgdW5pdHMpDQpYNyA9IHRvdGFsIHByb2R1Y3Rpb24gb2YgbGFyZ2UgdW5pdHMvZGF5IGF0IFBsYW50IDMgID0gMC4wIChub25lKQ0KWDggPSB0b3RhbCBwcm9kdWN0aW9uIG9mIG1lZGl1bSB1bml0cy9kYXkgYXQgUGxhbnQgMyA9IDAuMCAobm9uZSkNClg5ID0gdG90YWwgcHJvZHVjdGlvbiBvZiBzbWFsbCB1bml0cy9kYXkgYXQgUGxhbnQgMyA9IDQxNi42NjY3ICg0MTYuNyB1bml0cykNCg0KDQoNCg0KDQoNCkJlZm9yZSB3ZSBsb29rIGF0IG90aGVyIG91dHB1dCB2YWx1ZXMsIGxldCB1cyBjb25zaWRlciB1c2luZyBhIGRpZmZlcmVudCBtZXRob2QgdG8gaW5wdXQgdGhlIHByb2JsZW0gZm9ybXVhdGlvbi4gV2Ugd2lsbCB1c2UgdGhlIGxwIGZvcm1hdCBieSBjcmVhdGluZyBhIHRleHQgZmlsZSB0aGF0IGNvbnRhaW5zIHRoZSBXZWlnZWx0IHByb2JsZW0gZm9ybXVsYXRpb24uIFdlIGFsc28gb3V0cHV0dGVkIGFuIGxwIGZpbGUgdXNpbmcgdGhlIHdyaXRlLmxwIHN0YXRlbWVudCBhYm92ZS4NClBsZWFzZSBub3cgbG9vayBhdCB0aGUgYWRzbWl0aDNfQXNzaWdubWVudDQubHAgZmlsZS4gSW4gUlN0dWRpbywgeW91IGNhbiBkb3VibGUgY2xpY2sgb24gdGhlIGZpbGUgaW4gdGhlIEZpbGVzIGxpc3Qgb24gdGhlIHJpZ2h0IHBhbmUuDQoNCioqKg0KDQpXZSBub3cgcmVhZCB0aGUgbHAgZm9ybXVsYXRpb24gdXNpbmcgYW4gbHAgZmlsZS4gVG8gcmVhZCBhYm91dCBhYm91dCB0aGUgbHAgZm9ybWF0IGZvciBmaWxlcywgeW91IGNhbiByZWFkIHRoZSBkb2N1bWVudGF0aW9uIGF0IGh0dHA6Ly9scHNvbHZlLnNvdXJjZWZvcmdlLm5ldC81LjUvbHAtZm9ybWF0Lmh0bS4gDQpgYGB7cn0NCndyaXRlLmxwKGxwcmVjLCBmaWxlbmFtZSA9ICJhZHNtaXRoM19Bc3NpZ25tZW50NC5scCIsIHR5cGUgPSAibHAiKQ0KeCA8LSByZWFkLmxwKCJhZHNtaXRoM19Bc3NpZ25tZW50NC5scCIpICMgY3JlYXRlIGFuIGxwIG9iamVjdCB4DQp4ICAgICAgICAgICAgICAgICAgICAgICAgICAjIGRpc3BsYXkgeA0KYGBgDQoNClNvbHZlIHRoZSBscCBtb2RlbA0KYGBge3J9DQpzb2x2ZSh4KQ0KZ2V0Lm9iamVjdGl2ZSh4KSAgICAgICAgIyBnZXQgb2JqZWN0aXZlIHZhbHVlDQpnZXQudmFyaWFibGVzKHgpICAgICAgICAjIGdldCB2YWx1ZXMgb2YgZGVjaXNpb24gdmFyaWFibGVzDQpnZXQuY29uc3RyYWludHMoeCkgICAgICAjIGdldCBjb25zdHJhaW50IFJIUyB2YWx1ZXMNCmBgYA0KDQpJZiB5b3UgcnVuIGFsbCB0aGUgY2h1bmtzIGFib3ZlLCB5b3UgY2FuIGRpc3BsYXkgdGhlIHRleHQsIGNvZGUsIGFuZCBvdXRwdXQgaW4gYW4gaHRtbCBmaWxlLiBDbGljayBvbiB0aGUgNC4xLVdCQy5uYi5odG1sIGZpbGUgaW4geW91ciBkaXJlY3RvcnkgZnJvbSB3aXRoaW5nIFJTdHVkaW8uDQoNCllvdSBjYW4gYWxzbyBnZXQgdGhlIG91dHB1dCBpbiB3b3JkLCBvciBwZGYgZm9ybSBieSBrbml0dGluZyB0aGUgb3V0cHV0LiBVc2UgdGhlIEtuaXQgRG9jdW1lbnQgb3B0aW9uIGZyb20gdGhlIEZpbGUgbWVudSwgb3IgdXNlIHRoZSBkcm9wIGRvd24gbWVudSBmcm9tIHRoZSBQcmV2aWV3IG9wdGlvbiBhYm92ZS4gDQoNCmBgYHtyfQ0KDQpgYGANCg0KQWRkIGEgbmV3IGNodW5rIGJ5IGNsaWNraW5nIHRoZSAqSW5zZXJ0IENodW5rKiBidXR0b24gb24gdGhlIHRvb2xiYXIgb3IgYnkgcHJlc3NpbmcgKkN0cmwrQWx0K0kqLg0KDQpXaGVuIHlvdSBzYXZlIHRoZSBub3RlYm9vaywgYW4gSFRNTCBmaWxlIGNvbnRhaW5pbmcgdGhlIGNvZGUgYW5kIG91dHB1dCB3aWxsIGJlIHNhdmVkIGFsb25nc2lkZSBpdCAoY2xpY2sgdGhlICpQcmV2aWV3KiBidXR0b24gb3IgcHJlc3MgKkN0cmwrU2hpZnQrSyogdG8gcHJldmlldyB0aGUgSFRNTCBmaWxlKS4NCg0KVGhlIHByZXZpZXcgc2hvd3MgeW91IGEgcmVuZGVyZWQgSFRNTCBjb3B5IG9mIHRoZSBjb250ZW50cyBvZiB0aGUgZWRpdG9yLiBDb25zZXF1ZW50bHksIHVubGlrZSAqS25pdCosICpQcmV2aWV3KiBkb2VzIG5vdCBydW4gYW55IFIgY29kZSBjaHVua3MuIEluc3RlYWQsIHRoZSBvdXRwdXQgb2YgdGhlIGNodW5rIHdoZW4gaXQgd2FzIGxhc3QgcnVuIGluIHRoZSBlZGl0b3IgaXMgZGlzcGxheWVkLg0K</div>
 
 
 
