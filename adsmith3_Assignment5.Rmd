@@ -22,7 +22,7 @@ dir.create("images")
 
 ***
 
-This notebook contains the R-script code for asasignment 5. Specifically, the formulation for the Weigelt Corporation assignment with the added requirements of shadow pricing, duality, and sensitivity analysis.
+This notebook contains the R-script code for assignment 5. Specifically, the formulation for the Weigelt Corporation assignment with the added requirements of shadow pricing, duality, and sensitivity analysis.
 
 ***
 
@@ -125,7 +125,7 @@ lprec
 write.lp(lprec, filename = "Weigelt_Corporation_problem", type = "lp")
 ```
 
-We now solve the above LP problem
+We can now solve the above LP problem
 ```{r}
 solve(lprec)
 ```
@@ -308,5 +308,5 @@ get.sensitivity.rhs(w)
 get.sensitivity.obj(w)
 ```
 
-As can be seen from solving the dual, it is very simlar, but not exact (although it should be). 
+As can be seen from solving the dual, it is very similar, but not exact to the primal (although it should be). 
 
