@@ -1,0 +1,312 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+---
+title: "Weigelt Example"
+output: 
+  html_notebook: 
+    theme: cerulean
+    highlight: textmate
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+dir.create("images")
+```
+
+***
+
+This notebook contains the R-script code for asasignment 5. Specifically, the formulation for the Weigelt Corporation assignment with the added requirements of shadow pricing, duality, and sensitivity analysis.
+
+***
+
+If you have not yet installed the lpSolveAPI, use install.packages from the tools menu to do so. Or, just use the code below.
+
+* Note that lines that start with # are comments. 
+* At any point, use the Console to look for help about a particular function using ?. For ?make.lp() 
+* To run a chunk, the executable code, select the chunk, and use the Run button above to run that chunk. There are also keyboard shortcuts you can use to run chunks.
+God help an old man get the problem solved!
+
+```{r}
+install.packages("lpSolveAP")
+```
+
+Now, I must load the library we need to do assignment 5.
+```{r}
+library(lpSolveAPI)
+
+```
+
+***
+Let us set up the Weigelt Corporation problem. Note that we have 9 decision variables, and 11 constraints.
+In the first formulation, we will directly create the objective function and constraints.
+I used the formulation that I already turned in for assignment 2.
+
+X1 = total production of large units/day at Plant 1
+X2 = total production of medium units/day at Plant 1
+X3 = total production of small units/day at Plant 1
+X4 = total production of large units/day at Plant 2 
+X5 = total production of medium units/day at Plant 2
+X6 = total production of small units/day at Plant 2
+X7 = total production of large units/day at Plant 3 
+X8 = total production of medium units/day at Plant 3
+X9 = total production of small units/day at Plant 3
+
+LP formulation for this problem:
+
+We have only 3 plants, but there are 3X3 combinations (large, medium, small sizes)
+
+Max Z = 420X1 + 360X2 + 300X3 + 420X4 + 360X5 + 300X6 + 420X7 + 360X8 + 300X9
+
+ST:
+		                        1X1 + 1X2 + 1X3 <= 750
+                            1X4 + 1X5 + 1X6 <= 900
+                            1X7 + 1X8 + 1X9 <= 450
+                            20X1 + 15X2 + 12X3 <= 13000
+                            20X4 + 15X5 + 12X6 <= 12000
+                            20X7 + 15X8 + 12X9 <= 5000
+                            1X1 + 1X4 + 1X7 <= 900
+                            1X2 + 1X5 + 1X8 <= 1200
+                            1X3 + 1X6 + 1X9 <= 750
+                            1/750(1X1 + 1X2 + 1X3) - 1/900(1X4 + 1X5 + 1X6) = 0
+                            1/750(1X1 + 1X2 + 1X3) - 1/450(1X7 + 1X8 + 1X9) = 0
+    and, Xij >=0
+          X1 >=0,
+          X2 >=0,
+          X3 >=0,
+          X4 >=0,
+          X5 >=0,
+          X6 >=0, 
+          X7 >=0,
+          X8 >=0,
+          X9 >=0.
+
+```{r}
+# make an lp object with 11 constraints (rows) and 9 (columns) decision variables
+lprec <- make.lp(11, 9)
+# Now create the objective function. The default is a minimization problem. 
+set.objfn(lprec, c(420, 360, 300, 420, 360, 300, 420, 350, 300))
+# As the default is a minimization problem, we change the direction to set maximization
+lp.control(lprec,sense='max')
+# Add the three Plant capacity constraints by large, medium, & small sizes
+# First set of constraints are for Plant 1
+add.constraint(lprec, c(1, 1, 1, 0, 0, 0, 0, 0, 0), "<=", 750)
+add.constraint(lprec, c(0, 0, 0, 1, 1, 1, 0, 0, 0), "<=", 900)
+add.constraint(lprec, c(0, 0, 0, 0, 0, 0, 1, 1, 1), "<=", 450)
+# Add the in-progress storage requirements contraint by large, medium, & small sizes
+add.constraint(lprec, c(20, 15, 12, 0, 0, 0, 0, 0, 0), "<=", 13000)
+add.constraint(lprec, c(0, 0, 0, 20, 15, 12, 0, 0, 0), "<=", 12000)
+add.constraint(lprec, c(0, 0, 0, 0, 0, 0, 20, 15, 12), "<=", 5000)
+# Add the sales forecasts requirements contraint by large, medium, & small sizes
+add.constraint(lprec, c(1, 0, 0, 1, 0, 0, 1, 0, 0), "<=", 900)
+add.constraint(lprec, c(0, 1, 0, 0, 1, 0, 0, 1, 0), "<=", 1200)
+add.constraint(lprec, c(0, 0, 1, 0, 0, 1, 0, 0, 1), "<=", 750)
+# To avoid layoffs, management must must use the same % of its excess capacity
+# by large, medium, & small sizes
+add.constraint(lprec, c(1/750, 1/750, 1/750, -1/900, -1/900, -1/900, 0, 0, 0), "<=", 0)
+add.constraint(lprec, c(1/750, 1/750, 1/750, 0, 0, 0, -1/450, -1/450, -1/450), "<=", 0)
+# Set bounds for variables.
+# Remember that all variables had to be non-negative. We don't need to to do it here, as that is the default,
+# To identify the variables and constraints, we can create labels for the columns (variables)
+# and rows (constraints)
+# set variable names and name the constraints by way of function
+RowNames <- c("Plant1_excess_capacity", "Plant2_excess_capacity", "Plant3_excess_capacity","Plant1_in-progess_storage", "Plant2_in-progress_storage", "Plant3_excess_storage", "Plant1_sales_forecast", "Plant2_sales_forecast", "Plant3_sales_forecast", "Layoff_prevention_Plant1_&_Plant2", "Layoff_prevention_Plant_1_&_Plant3")
+ColNames <- c("Product1_large_sizes", "Product1_medium_sizes", "Plant1_small_sizes", "Plant2_large_sizes", "Plant2_medium sizes", "Plant2_small_sizes", "Plant3_large_sizes", "Plant_3_medium_sizes", "Plant3_small_sizes")
+# dimnames(lprec) <- list(RowNames, ColNames)
+# Now, print out the model
+lprec
+# The model can also be saved to a file
+write.lp(lprec, filename = "Weigelt_Corporation_problem", type = "lp")
+```
+
+We now solve the above LP problem
+```{r}
+solve(lprec)
+```
+
+The output above doesn't indicate that the answer is 0, but that there was a successful solution
+We now output the value of the objective function, and the variables
+```{r}
+get.objective(lprec)
+get.variables(lprec)
+```
+Question 1: Solution to the problem.
+
+The solution shows that the profit is $698,000, with the first variable value equal to 516.6667, the second variable value equal to 177.7778, the thrid variable value equal to 0, the fourth variable value equal to 0, the fifth variable value equal to 533.3333, the sixth variable value equal to 333.3333, the seventh variable value equal to 0, the eighth variable value equal to 0, and the ninth variable value equal to 416.6667.
+One difficulty in reading the output is that lpsolveAPI will not write the variable name next to the solution. As such, one should remember that the variables values are output in the order in which it shows up in the lp formulation. 
+
+To add the variable names and solutions:
+
+Max profit = $698,000
+
+X1 = total production of large units/day at Plant 1 = 516.6667 (516.7 units)
+X2 = total production of medium units/day at Plant 1 = 177.7778 (177.8 units)
+X3 = total production of small units/day at Plant 1 = 0.0 (none)
+X4 = total production of large units/day at Plant 2 = 0.0  (none)
+X5 = total production of medium units/day at Plant 2 = 533.3333 (533.3 units)
+X6 = total production of small units/day at Plant 2 = 333.3333 (333.3 units)
+X7 = total production of large units/day at Plant 3  = 0.0 (none)
+X8 = total production of medium units/day at Plant 3 = 0.0 (none)
+X9 = total production of small units/day at Plant 3 = 416.6667 (416.7 units)
+
+
+
+
+
+
+Before we look at other output values, let us consider using a different method to input the problem formuation. We will use the lp format by creating a text file that contains the Weigelt problem formulation. We also outputted an lp file using the write.lp statement above.
+Please now look at the adsmith3_Assignment4.lp file. In RStudio, you can double click on the file in the Files list on the right pane.
+
+***
+
+We now read the lp formulation using an lp file. To read about about the lp format for files, you can read the documentation at http://lpsolve.sourceforge.net/5.5/lp-format.htm. 
+```{r}
+write.lp(lprec, filename = "Weigelt_Corporation_problem", type = "lp")
+x <- read.lp("Weigelt_Corporation_problem", type = "lp") 
+# create an lp object x
+x                          
+# display x
+```
+
+Solve the lp model
+```{r}
+solve(x)
+get.objective(x)        # get objective value
+get.variables(x)        # get values of decision variables
+get.constraints(x)      # get constraint RHS values
+```
+
+Question 2. Identity the shadow prices, dual solution, and reduced costs.
+
+Please note that the dual includes the 0 term at the end to account for the nonnegativity constrain, which is 0 by definition.  If the primal formulation had 9 variables and 11 contraints, the dual will have the transpose or 11 variables and 9 constraints. The following code will generate the dual solution, shadow prices, and reduced costs.
+
+
+```{r}
+solve(x)
+# get shadow prices
+get.sensitivity.rhs(x)
+# get reduced costs
+get.sensitivity.obj(x)
+
+```
+Question 3. Further, identity the sensitivity of the above prices and costs.
+
+Please note that the shadow prices are under the $duals values. For example, the shadow prices for constraint 1 is 0, for 2 is 0, for 3 is 0, for 4 is 12, for 5 is 24, for 6 is 49, for 7 is 0, for 8 is 0, and for 9 is 12. The last values refer to the non-negativity constraints. 
+
+We also have valid ranges for shadow price calculations. Those are given under $dualsfrom and $dualstill. Note for constraint 1, for example, it is from $360 to $480, which means that as long as the the profit for x1 of large units/day at Plant 1 (currently $420), remains in the existing problem formulation, we will continue to produce it the fleasible solution. I would like to say that as long as profits for x1 are between $360 to $489, we will not change its production schedule.  If the profit for x1 drops below $360, we probaly will not product it and if the profit is greater than $480, we will probably produce more of it.  Of course, it has its limits based on the excess capcity availabe to the three plants. I like to use the sensity analysis as giving the range that the optimal solutions is insensitive to the changes within this range.
+
+The reduced costs are expressed within the $objfrom and $objtill values. 
+
+The output here indicates that as long as the contribution to profit for product 1 is between 360 to 480, product 1 can remain in the solution. The optimum solution has x1 as a basic (i.e., in the current solution) variable at x1 = 516.7 units. The current profit is $420
+
+Similarly, $337.5 <= C2 <= $420, where c2 is the contribution to profit for x2, x2 will be part of the final solution. If c2 < 337.5, then product 2(x2) will no longer be part of the final solution. The optimum solution has x2 as a basic (i.e., in the current solution) variable at x2 = 178.8 units. The current profit for x2 is $360, well within the range of $337.5 to $420.
+
+For product 3, negative infinity (no lower bound) <= c3 <= 336, then x3 will be part of the final solution. Currently, x3 as a nonbasic variable (i.e., not in the current solution), so one must make a profit of greater than $360 for it to be a candidate for potential production.  The cuurent profit for x3 is $330, which is too low to consider production.  It must have a profit of at least $336 or greater in order to consider producing it (current production = 0 units). 
+
+For product 4, negative infinity (no lower bound) <= c4 <= $480, then x3 will be part of the final solution. Currently, x4 is a nonbasic variable (i.e., not in the current solution), so one must make a profit of greater than $420 for it to be a candidate for potential production.  The cuurent profit is $330, which is too low to consider production.  It must have a profit of at least $480 or greater in order to consider producing it (current production = 0 units). 
+
+For product 5, $315 <= c5 <= $375, then x5 will be part of the final solution. The optimum solution has x5 as a basic (i.e., in the current solution) variable at x5 = 533.3 units. The current profit for x5 is $360, well within the range of $315 to $375.
+
+For product 6, $288 <= c6 <= 336, then x6 will be part of the final solution. The optimum solution has x6 as a basic (i.e., in the current solution) variable at x6 = 333.3 units. The current profit for x6 is $300, which is well within the range of $288 to $360.
+
+For product 7, negative infinity (no lower bound) <= c7 <= $680, then x7 will be part of the final solution. Currently, x7 is a nonbasic variable (i.e., not in the current solution), so one must make a profit of greater than $680 for it to be a candidate for potential production.  The cuurent profit is $420, which is too low to consider production.  It must have a profit of at least $680 or greater in order to consider producing it (current production = 0 units). 
+
+For product 8, negative infinity (no lower bound) <= c8 <= $435, then x8 will be part of the final solution. Currently, x8 is a nonbasic variable (i.e., not in the current solution), so one must make a profit of greater than $435 for it to be a candidate for potential production.  The cuurent profit is $360, which is too low to consider production.  It must have a profit of at least $435 or greater in order to consider producing it (current production = 0 units). 
+
+For product 9, $230 <= c9 <= positive infinity (no upper bound), then x9 will be part of the final solution. The optimum solution has x9 as a basic (i.e., in the current solution) variable at x9 = 426.7 units. The current profit for x9 is $300, which is well within the range of at least $230.
+
+For the last question in assignment 5:
+
+Question 5. Formulate the dual of the above problem and solve it. Does the solution agree with what you observed from the primal.
+
+As we were taught, the daul is the transposed of the primal.  If the primal is a max proble, the dual is a min problem.  The dual of the dual is a primal.
+
+LP formulation for this dual problem:
+
+We have 9 constraints with 11 variables, the opposite of the primal problem. The following is the dual formulation of the previous primal.
+
+min W = 750y1 + 900y2 + 450y3 + 13000y4 + 12000y5 + 500y6 + 900y7 + 1200y8 + 750y9 + 0y10 + 0y11
+
+ST:
+		      1y1 + 0y2 + 0y3 + 20y4 + 0y5 + 0y6 + 1y7 + 0y8 + 0y9 + 1/750y10 + 1/750y11 >= 420
+          1y1 + 0y2 + 0y3 + 15y4 + 0y5 + 0y6 + 0y7 + 1y8 + 0y9 + 1/750y10 + 1/750y11 >= 360
+          1y1 + 0y2 + 0y3 + 12y4 + 0y5 + 0y6 + 0y7 + 0y8 + 1y9 + 1/750y10 + 1/750y11 >= 300
+          0y1 + 1y2 + 0y3 + 0y4 + 20y5 + 0y6 + 1y7 + 0y8 + 0y9 + -1/900y10 + 0y11 >= 420
+          0y1 + 1y2 + 0y3 + 0y4 + 15y5 + 0y6 + 0y7 + 1y8 + 0y9 + -1/900 y10 + 0y11 >= 360
+          0y1 + 1y2 + 0y3 + 0y4 + 12y5 + 0y6 + 0y7 + 0y8 + 1y9 + -1/900y10 + 0y11 >= 300
+          0y1 + 0y2 + 1y3 + 0y4 + 0y5 + 20y6 + 1y7 + 0y8 + 0y9 + 0y10 + -1/450y11 >= 420
+          0y1 + 0y2 + 1y3 + 0y4 + 0y5 + 15y6 + 0y7 + 1y8 + 0y9 + 0y10 + -1/450y11 >= 360
+          0y1 + 0y2 + 1y3 + 0y4 + 0y5 + 12y6 + 0y7 + 0y8 + 1y9 + 0y10 + -1/450y11 >= 300
+      and,yij>=0.
+          y1 >=0,
+          y2 >=0,
+          y3 >=0,
+          y4 >=0,
+          y5 >=0,
+          y6 >=0, 
+          y7 >=0,
+          y8 >=0,
+          y9 >=0,
+          y10 >=0,
+          y11 >=0.
+    
+    Now, we can set this problem and solve.
+
+```{r}
+# make an lp object with 9 constraints (rows) and 11 (columns) decision variables, the opposite of the primal
+lprecdual <- make.lp(9, 11)
+# Now create the objective function. The default is a minimization problem. 
+set.objfn(lprecdual, c(750, 900, 450, 13000, 120000, 5000, 900, 1200, 750, 0, 0))
+# As the default is a minimization problem, we change the direction to set maximization if we want. I still like to set it to a minimum problem, although it is not required.
+lp.control(lprecdual,sense='min')
+#
+# Add the nine dual capacity constraints.
+# 
+add.constraint(lprecdual, c(1, 0, 0, 20, 0, 0, 1, 0, 0, 1/750, 1/750), ">=", 420)
+add.constraint(lprecdual, c(1, 0, 0, 15, 0, 0, 0, 1, 0, 1/750, 1/750), ">=", 360)
+add.constraint(lprecdual, c(1, 0, 0, 12, 0, 0, 0, 0, 1, 1/750, 1/750), ">=", 300)
+add.constraint(lprecdual, c(0, 1, 0, 0, 20, 0, 1, 0, 0, -1/900, 0), ">=", 420)
+add.constraint(lprecdual, c(0, 1, 0, 0, 15, 0, 0, 1, 0, -1/900, 0), ">=", 360)
+add.constraint(lprecdual, c(0, 1, 0, 0, 12, 0, 0, 0, 1, -1/900, 0), ">=", 300)
+add.constraint(lprecdual, c(0, 0, 1, 0, 0, 20, 1, 0, 0, 0, -1/450), ">=", 420)
+add.constraint(lprecdual, c(0, 0, 1, 0, 0, 15, 0, 1, 0, 0, -1/450), "=", 360)
+add.constraint(lprecdual, c(0, 0, 1, 0, 0, 12, 0, 0, 1, 0, -1/450), "=", 300)
+#
+# Set bounds for variables.
+# Remember that all variables had to be non-negative. We don't need to to do it here, as that is the default,
+# To identify the variables and constraints, we can create labels for the columns (variables)
+# and rows (constraints)
+##
+# Now, print out the dual model
+lprecdual
+# The model can also be saved to a file
+write.lp(lprecdual, filename = "Weigelt_Corporation_dual_problem", type = "lp")
+w <- read.lp("Weigelt_Corporation_dual_problem", type = "lp") 
+# We need to solve this problem.
+#
+# create an lp object w
+w                          
+# display w
+solve(w)
+get.objective(w) # get objective value
+get.variables(w) # get values of decision variables
+get.constraints(w)      # get constraint RHS valuessolve(x)
+# compare solution with primal
+solve(x)
+get.objective(x)        # get objective value
+get.variables(x)        # get values of decision variables
+#
+# get shadow prices
+get.sensitivity.rhs(w)
+# get reduced costs
+get.sensitivity.obj(w)
+```
+
+As can be seen from solving the dual, it is very simlar, but not exact (although it should be). 
+
