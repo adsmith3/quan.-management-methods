@@ -16,9 +16,9 @@ output:
 ---
 
 ```
-#{r setup, include=FALSE}
-#knitr::opts_chunk$set(warning = FALSE, message = FALSE)
-#dir.create("images")
+{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+dir.create("images")
 ```
 
 ***
@@ -118,7 +118,8 @@ dimnames(lprec) <- list(RowNames, ColNames)
 # Now, print out the model
 lprec
 # The model can also be saved to a file
-write.lp(lprec, filename = "adsmith3_Assignment4", type = "lp")
+write.lp(lprec, filename = "Weigelt_Corporation_problem", type = "lp")
+
 ```
 
 We now solve the above LP problem
@@ -162,9 +163,12 @@ Please now look at the adsmith3_Assignment4.lp file. In RStudio, you can double 
 
 We now read the lp formulation using an lp file. To read about about the lp format for files, you can read the documentation at http://lpsolve.sourceforge.net/5.5/lp-format.htm. 
 ```{r}
-write.lp(lprec, filename = "adsmith3_Assignment4.lp", type = "lp")
-x <- read.lp("adsmith3_Assignment4.lp") # create an lp object x
-x                          # display x
+write.lp(lprec, filename = "Weigelt_Corporation_problem", type = "lp")
+x <- read.lp(filename = "Weigelt_Corporation_problem", type = "lp") 
+# create an lp object x
+x                          
+# display x               
+
 ```
 
 Solve the lp model
