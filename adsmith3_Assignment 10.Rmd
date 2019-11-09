@@ -1,0 +1,357 @@
+---
+title: "Metaheuristics Exercise 
+Simulated Annealing (SA) Formulation and Solution, Part 1 
+Genetic Algorithm (SA) Formulation and Solution, Part 2"
+output: html_notebook
+---
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+  html_notebook: 
+    theme: cerulean
+    highlight: textmate
+---
+
+```
+{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+dir.create("images")
+```
+
+***
+
+This notebook contains the R-script code for assignment 10. Specifically, the The purpose of this assignment is to apply genetic algorithm (GA) (second) and simulated annealing (SA) (first) to
+search for the optimal parameters for a regression formulation and solution.
+
+***
+
+The purpose of this assignment is to apply metaheuristics to a problem. One of the primary uses
+of metaheuristics for us is in parameter space optimization. That is, to find the values of the
+parameters that leads to optimal results for our algorithm. 
+
+PROBLEM DEFINITION STATEMENT:  
+
+In this problem, you will apply both genetic algorithm (GA) and simulated annealing (SA) to
+search for the optimal parameters for a regression. As such, do the following:
+
+1. First create a dataset with with about 20 X, Y values. These values may be generated
+randomly, or you can use any previous data. You may also use a dataset that you have
+used in a different class.
+
+2. Find the least-squares line. You should have values for b0 (Y intercept) and b1 (slope).
+These are the optimal values.
+
+3. Now, use GA and SA to search for optimal b0 and b1 values. The objective function,
+which you need to define, should be to minimize SSE (sums of square error). How does
+your solution compare to the optimal value above?
+
+4. Plot your solutions, and the optimal regression line (using the built-in function). Clearly
+label the output. You may use ggplot, or any other plotting function in R.
+
+Please note, to run a chunk, the executable code, select the chunk, and use the Run button above to run that chunk. There are also keyboard shortcuts you can use to run chunks.
+
+```{r}
+install.packages("GenSA")
+install.packages("quantmod")
+install.packages ("PerformanceAnalytics")
+```
+
+Now, load the library we need to do assignment 10.
+```{r}
+library(GenSA)
+library("quantmod")
+library("PerformanceAnalytics")
+```
+
+***
+I will initially set up the formulation for genetic algorithm (GA) and simulated annealing (SA) to search for the optimal parameters for a regression, with the ultimate task of finding a solution to the problem. First, we shall deal with the genetic algorithm using a hypothetical case. 
+
+Basic explanation of search methods for parameter identification:
+
+As initially described by Dr. Wu, in contrast with blind-search methods for finding an optimal solution as demonstrated by LP techniques, modern optimization techniques are based on a guided search. These solutions are generated from existing solutions and we learn to improve on the solutions via error minimization and variance capture maximization (r-square and AUC - area under the curve). Parameter estimation for nonlinear systems has received much attention in the application of optimization techniques in terms of systems identification. Some of the search methods/models for parametric identification include a model based multi-innovation extended stochastic gradient algorithm for multivariable nonlinear systems, model based RELS and MI-ELS algorithms for Hammerstein OEMA systems, a model-based recursive generalized least squares parameter estimation for Hammerstein OEAR systems, and a maximum likelihood least squares identification methods for linear controlled autoregressive models and for linear systems with autoregressive moving average noise. Interesting modern approaches include the negative gradient and the Newton search methods for nonlinear optimization problems. According to Isermann and Munchhof (2011), modeling and estimation are very important to system identification, since modeling is a critical step when applying the theory to real processes in order to optimize certain parameters.  Know that we have used the basic LP model in numerous setting in order to illustrate its flexibility and applications to real-world problem solving. However, LP has a number of serious limitations that limit its usefulness. Although we have only one module looking at more modern optimization techniques, I assure you that you will get more experience with them in the other courses in the MS program in business analytics. As I have previously mentioned in my introduction that I have completed all the requirements for the degree except the first two. Therefore, I have the foresight of what much of the remaining coursework will lead to in terms of subject matter. Much of the remaining coursework will develop strategies to generated cross-validated mathematical models that appropriately and accurately describe situation/problem with many variable inputs that need to be evaluated for an optimal decision. To achieve this goal, there will need to be several specifications should be considered (hyperparameters that set limits and variables the system that is being optimized). The relationships between these variables need to be specified based on domain knowledge, assumptions about the uncertainties of the model, and identification parameters that are machine-generated concerning the system's structure. As suggested Isermann and Munchhof, "after obtaining an observable and identifiable model, the estimation of its unknown variables is addressed using an input/output dataset" (p. 502). There are important considers between states and parameter estimation in that systems identification consists in experimentally determining a temporary behavior of a system. This state is based on a mathematical model and using measured signals to determine the behavior. The ultimate goal is to minimize the error between the real process and its mathematical system, which is typically determined by cross-validation techniques through the use of hyperparameter selection.
+
+For example, Li, Ding, and Yang (2012) presented a rather detailed account of search methods for parameter identification. The authors inspected identification problems of nonlinear functions fitting or nonlinear systems modelling by using a gradient-based iterative algorithm and a Newton iterative algorithm. In the Advanced Data Mining and Predictive Analytics course taught by Dr. Razavi, you will be introduced to a number of algorithms where you need to logically decide on hyperparameter (parameters about parameters that you must subjectively set levels at instead of being determined via machine learning). Li, Ding, and Yang presented methods to search for proper parameters of a nonlinear system by using the negative gradient search method and Newton method. They found that their two-model transformation-based iterative methods proposed did enhance computational efficiencies. They found that a simpler nonlinear model is achieved to simplify the computation. 
+
+REFERENCES:
+
+Isermann, R., & Munchhof, M. (2011). Neural networks and lookup tables for identification. Identification of Dynamic Systems, pp. 501-537. [Online}. Retrieved November 9, 2019 from https://link.springer.com/chapter/10.1007/978-3-540-78879-9_20.
+
+Li, J., Ding, R., & Yang, Y. (2012). Iterative parameter identification methods for nonlinear functions. Applied Mathematical Modeling, 36(6), 2739-2750. 
+
+Our deliveriables:  
+ 
+1. First create a dataset with with about 20 X, Y values. These values may be generated
+randomly, or you can use any previous data. You may also use a dataset that you have
+used in a different class.
+
+2. Find the least-squares line. You should have values for b0 (Y intercept) and b1 (slope).
+These are the optimal values
+3. Now, use GA and SA to search for optimal b0 and b1 values. The objective function,
+which you need to define, should be to minimize SSE (sums of square error). How does
+your solution compare to the optimal value above?
+
+4. Plot your solutions, and the optimal regression line (using the built-in function). Clearly
+label the output. You may use ggplot, or any other plotting function in R.
+
+```{r}
+tickers <- c("GE", "IBM", "GOOG", "AMZN", "AAPL")
+getSymbols(tickers, from = "2012-10-01", to = "2018-10-31")
+
+```
+
+The 'getSymbols' currently uses auto.assign=TRUE by default, but will use auto.assign=FALSE in 0.5-0. I will still be able to use 'loadSymbols' to automatically load data. getOption("getSymbols.env") and getOption("getSymbols.auto.assign") will still be checked for alternate defaults.
+
+This message is shown once per session and may be disabled by setting options("getSymbols.warning4.0"=FALSE). See ?getSymbols for details.
+
+WARNING: There have been significant changes to Yahoo Finance data. Please see the Warning section of '?getSymbols.yahoo' for details. 
+
+This message is shown once per session and may be disabled by setting options("getSymbols.yahoo.warning"=FALSE).
+
+```{r}
+
+# The next step is to provide names to columns.
+P <- NULL
+for(ticker in tickers) {
+ tmp <- Cl(to.monthly(eval(parse(text = ticker))))
+ P <- cbind(P, tmp)
+}
+colnames(P) <- tickers
+R <- diff(log(P))
+R <- R[-1,]
+mu <- colMeans(R)
+sigma <- cov(R)
+
+
+```
+The next step is to create the appropriate models for the simulated annealing (SA) formulation and solution.
+```{r}
+
+pContribCVaR <- ES(weights = rep(0.2, 5), method = "gaussian", portfolio_method = "component", mu = mu, sigma = sigma)$pct_contrib_ES
+obj <- function(w) {
+ fn.call <<- fn.call + 1
+ if (sum(w) == 0) { w <- w + 1e-2 }
+ w <- w / sum(w)
+ CVaR <- ES(weights = w, method = "gaussian", portfolio_method = "component", mu = mu, sigma = sigma)
+ tmp1 <- CVaR$ES
+ tmp2 <- max(CVaR$pct_contrib_ES - 0.225, 0)
+ out <- tmp1 + 1e3 * tmp2
+ return(out)
+}
+
+```
+
+The next step is to complete the simulated annealing (SA) to search for the optimal parameters for a regression solution. 
+```{r}
+
+set.seed(1234)
+fn.call <<- 0
+out.GenSA <- GenSA(fn = obj, lower = rep(0, 5), upper = rep(1, 5), control = list(smooth = FALSE, max.call = 3000))
+fn.call.GenSA <- fn.call
+out.GenSA$value
+
+```
+
+This is the generated simulated annealing (SA) solution value.
+
+
+```{r}
+
+cat("GenSA call functions", fn.call.GenSA, "times.\n")               
+
+```
+
+Solve the simulated annealing (SA) model.
+
+```{r}
+
+wstar.GenSA <- out.GenSA$par
+wstar.GenSA <- wstar.GenSA / sum(wstar.GenSA)
+rbind(tickers, round(100 * wstar.GenSA, 2))
+
+```
+```{r}
+100 * (sum(wstar.GenSA * mu) - mean(mu))
+```
+```{r}
+
+```
+
+title: "Genetic  Formulation and Solution Second"
+
+If you run all the chunks above, you can display the text, code, and output in an html file. Click on the 4.1-WBC.nb.html file in your directory from withing RStudio.
+
+You can also get the output in word, or pdf form by knitting the output. Use the Knit Document option from the File menu, or use the drop down menu from the Preview option above. 
+
+title: "Genetic Algorithm (GA) Formulation and Solution Second"
+
+```{r}
+# Genetic Algorithm (GA) Formulation and Solution Second
+#
+library("quantmod")
+tickers <- c("GE", "IBM", "GOOG", "AMZN", "AAPL")
+getSymbols(tickers, from = "2012-10-01", to = "2018-10-31")
+#
+
+```
+```{r}
+
+P <- NULL
+for(ticker in tickers) {
+ tmp <- Cl(to.monthly(eval(parse(text = ticker))))
+ P <- cbind(P, tmp)
+}
+colnames(P) <- tickers
+R <- diff(log(P))
+R <- R[-1,]
+mu <- colMeans(R)
+sigma <- cov(R)
+library("PerformanceAnalytics")
+pContribCVaR <- ES(weights = rep(0.2, 5), method = "gaussian", portfolio_method = "component", mu = mu, sigma = sigma)$pct_contrib_ES
+obj <- function(w) {
+ fn.call <<- fn.call + 1
+ if (sum(w) == 0) { w <- w + 1e-2 }
+ w <- w / sum(w)
+ CVaR <- ES(weights = w, method = "gaussian", portfolio_method = "component", mu = mu, sigma = sigma)
+ tmp1 <- CVaR$ES
+ tmp2 <- max(CVaR$pct_contrib_ES - 0.225, 0)
+ out <- tmp1 + 1e3 * tmp2
+ return(out)
+}
+
+```
+
+I must install and load the Genetic Algorithm (GA) library.
+
+```{r}
+install.packages("GA")
+
+library(GA)
+```
+The first step is to set the parameters and value estimators for the Genetic Algorithm (GA).
+```{r}
+
+GA_P <- ga(type = "real-valued",fitness = function(w) -obj(w) ,lower=rep(0,5),upper=rep(1,5), popSize = 50)
+summary(GA_P)
+```
+```{r}
+plot(GA_P)
+```
+Now, taking the solutions for the Genetic Algorithm successfully completion.
+```{r}
+
+ga_solutions <- c( 0.7494349, 0.5221145, 0.7760276, 0.4458829, 0.7268827)
+wstar.GA <- ga_solutions
+wstar.GA <- wstar.GA / sum(wstar.GA)
+rbind(tickers, round(100 * wstar.GA, 2))
+
+```
+
+```{r}
+
+p <- matrix(c(0.07775638,22.73,20.8,25.86,8.18,22.43,-0.07880564,23.27, 16.21, 24.1, 13.85, 22.57),ncol=2 )
+rownames(p) <- c("FitnessValue", "GeneralElectric", "IBM", "Google", "Amazon", "Apple")
+colnames(p) <- c("Simulated annealing","Genetic Algorithm")
+result <- as.table(p)
+library(knitr)
+kable(result,caption = "Multi-valued Optimization Exercise")
+
+```
+This section is to apply both GA and SA to search for the optimal parameters in a regression.
+
+Applying Genitic algorithm to search optimal parameters in a regression.
+```{r}
+# Applying Genitic algorithm to search optimal parameters in a regression.
+#
+x<-(mtcars$wt)
+y<-(mtcars$hp)
+model=lm(y~x)
+summary(model)
+#
+
+```
+Appling to regression equation.
+
+```{r}
+obj1<- function(b0,b1) {
+  sum(y-(b0+b1*x))^2
+}
+
+lower = c(-2,45)
+upper = c(3,50)
+GAr <- ga(type = "real-valued",fitness = function(r) - obj1(r[1], r[2]), lower=lower,upper=upper, popSize = 50)
+summary(GAr)
+
+```
+
+Next, plot these results.
+
+```{r}
+
+plot(GAr)
+
+```
+
+Now, plot for Genetic Algorithm (GA) to search optimal parameters in a regression and the optimal regression line.
+
+```{r}
+#
+df <- data.frame(x,y)
+plot(x,y,col="red",xlab="Car Weight",ylab="Car Horsepower",main="Genetic Algorithm Results",pch=10)
+abline(-1.134065, 45.94662,col="blue")
+
+
+```
+
+One of the next most important steps is to apply Simulated Annealing to search optimal parameters in a regression line.
+
+```{r}
+#
+library(GenSA)
+
+par <- c(40, -2)
+
+SAr <- GenSA(par=par,fn = function(r) obj1(r[1], r[2]), lower = c(-2,45), upper = c(3,50))
+
+SAr[c("value","par","counts")]
+#
+
+```
+
+```{r}
+
+m <- SAr$par[2]
+n <- SAr$par[1]
+
+```
+
+x1 x2
+-1.672119, 46.113799
+
+Plot for Simulated Annealing (SA) to search optimal parameters in a regression and the optimal regression line.
+
+```{r}
+
+#
+df <- data.frame(x,y)
+plot(x,y,col="black",xlab="Car Weight",ylab="Car Horsepower",main="Simulated Annealing Approach",pch=8)
+abline(-1.672119, 46.113799,col="purple")
+#
+
+```
+
+At last, we can plot the results of GA and SA simutaniously.
+```{r}
+
+#
+df <- data.frame(x,y)
+plot(x,y,col="red",xlab="Car Weight",ylab="Car Horsepower",main="Results of Genetic and Simulated Annealing Approaches",pch=10)
+axis(side=1, at=seq(1, 5, by=1))
+axis(side=2, at=seq(100, 500, by=100))
+abline(-1.134065, 45.94662,col="yellow")
+abline(-1.672119, 46.113799,col="purple")
+#
+
+
+```
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
