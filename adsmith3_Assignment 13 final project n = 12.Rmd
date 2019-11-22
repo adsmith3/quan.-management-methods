@@ -26,8 +26,7 @@ dir.create("images")
 
 ***
 
-This notebook contains the R-script code for the final project. Specifically, the purpose of this assignment is to explore group selelction formulations and solutions. I original wanted to set it up using the traditional LP model via lpsolveAPI, but decided against it. The traditional factors of sucess (i.e. talent, emotional stability, expertise, gender, etc.) are rarely predictive in group perferences and determining successfully ineraction and performance. I decided to let each individual use the three factors that I will outline in the following problem formulation, decide on their own weights for each factor, and evaluate the individuals that are chairing each project group and generate a rating perference. The members will chose their first group perference based based on thir highest score, followed by their second, and third choices.
-
+This notebook contains the R-script code for the final project. Specifically, the purpose of this assignment is to explore group selection formulations and solutions. I originally wanted to set it up using the traditional LP model via lpsolveAPI, but decided against it. The traditional factors of success (i.e. talent, emotional stability, expertise, gender, etc.) are rarely predictive in group preferences and determining successfully interaction and performance. I decided to let each individual use the three factors that I will outline in the following problem formulation, decide on their own weights for each factor, and evaluate the individuals that are chairing each project group and generate a rating preference. The members will choose their first group preference based on their highest score, followed by their second, and third choices.
 ***
 
 Purpose
@@ -70,7 +69,7 @@ The basic equation would be:
 
 EV = weight1 (co-worker gender) + weight2 (relevant project experience) + weight3 (years of successful professional employment)
 
-Then each student/individual would inspect each available group that is available based on type of project, minimu levels of gender diversity, and required levels of experience. It is assumed that these minimun qualifications and descriptions are known to our stduents/individuals, or preferences cannot be used in the selection process. Then each one would calculate the expected value of each group based on their rating and weight selection. This program then assumes that these rankings have been made and ready for group placement based on their group project placement. Having spent years in industry and academic environments, I understand teh complexities and subjectivity in placing students/individuals into projects. There are too many interactions that making a simple linear programming model or regission equation cannot capture. I believe that allowing for studnets/individuals to subjective rank their preferences based on their own value of these 3 factors may be the best way to proceed.
+Then, each student/individual would inspect each available group that is available based on type of project, minimum levels of gender diversity, and required levels of experience. It is assumed that these minimum qualifications and descriptions are known to our students/individuals, or preferences cannot be used in the selection process. Then each one would calculate the expected value of each group based on their rating and weight selection. This program then assumes that these rankings have been made and ready for group placement based on their group project placement. Having spent years in industry and academic environments, I understand the complexities and subjectivity in placing students/individuals into projects. There are too many interactions that making a simple linear programming model or regression equation cannot capture. I believe that allowing for students/individuals to subjective rank their preferences based on their own value of these 3 factors may be the best way to proceed.
 
 
 Data Collection/Method
@@ -179,11 +178,11 @@ ggplot(plot_data, aes(x = project, y = count, fill = weight)) +
 
 ```
 
-Model Devopment.
+Model Development.
 
 Now that we can generate date represnetative of the preferences of potential group members based on their subject ranking of the three factors I have decided upon, it is time to generate a model.
 
-The model  is based on the idea is to introduce a binary variable xi,jxi,j that is 11 if student ii is matched to course jj. As an objective we will try to satisfy preferences according to their weight. So, assigning a student to a project group with preference 3 gives 3 points and so forth. The model assumes, that the total capacity of the project groups is enough for all students.
+The model  is based on the idea is to introduce a binary variable xi,jxi,j that is 11 if student ii is matched to project jj. As an objective we will try to satisfy preferences according to their weight. So, assigning a student to a project group with preference 3 gives 3 points and so forth. The model assumes, that the total capacity of the project groups is enough for all students.
 
 Here it is in mathematical notation:
 
@@ -246,7 +245,7 @@ REFERENCE
 Hübscher, R. (2010). Assigning Students to Groups Using General and Context-Specific Criteria. IEEE Transactions on Learning Technologies, 3, 178-189.
 
 
-PLEASE NOTE: In terms of this project, the advantage is that this preference is always fully satisfied. The disadvantage is that the size for each group must be specified in advance and is static. In general, this is not a big problem because it is uncommon to use group sizes that vary widely. Alternative approaches to the swap move are possible, for instance, by complementing swaps with simple moves of one student from one group to another. This is a Mixed integer linear optimization problem with no continous Variables. In terms of integer vaibles, there are 160 binary. The model sense is to maximize the potential members' preference rankings.
+PLEASE NOTE: In terms of this project, the advantage is that this preference is always fully satisfied. The disadvantage is that the size for each group must be specified in advance and is static. In general, this is not a big problem because it is uncommon to use group sizes that vary widely. Alternative approaches to the swap move are possible, for instance, by complementing swaps with simple moves of one student from one group to another. This is a Mixed integer linear optimization problem with no continous Variables. In terms of integer vaibles, there are 48 binary. The model sense is to maximize the potential members' preference rankings.
 
 
 ```{r}
@@ -348,4 +347,4 @@ ggplot(plot_data, aes(x = project, y = count, fill = weight)) +
 
 ```
 
-Of course, with only 12 indidivuals and three projects, it was almost certain that we could accommodate them. The challenge would be with a significantly larger n-size. That can be simply done by changing the inital settings at the beginning of the r-script.
+Of course, with only 12 individuals and 3 project preferences among 4 gtoups, it was almost certain that we could accommodate them. The challenge would be with a significantly larger n-size. That can be simply done by changing the initial settings at the beginning of the r-script.
