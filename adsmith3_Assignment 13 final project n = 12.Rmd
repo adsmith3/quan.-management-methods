@@ -1,0 +1,351 @@
+---
+title: "Final Project Exercise
+ Group Selection Application
+ Using Subjective and Objective Factors
+ Alan D. Smith"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+---
+title: "Final Project Exercise"
+output: 
+  html_notebook: 
+    theme: cerulean
+    highlight: textmate
+---
+
+```
+{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+dir.create("images")
+```
+
+***
+
+This notebook contains the R-script code for the final project. Specifically, the purpose of this assignment is to explore group selelction formulations and solutions. I original wanted to set it up using the traditional LP model via lpsolveAPI, but decided against it. The traditional factors of sucess (i.e. talent, emotional stability, expertise, gender, etc.) are rarely predictive in group perferences and determining successfully ineraction and performance. I decided to let each individual use the three factors that I will outline in the following problem formulation, decide on their own weights for each factor, and evaluate the individuals that are chairing each project group and generate a rating perference. The members will chose their first group perference based based on thir highest score, followed by their second, and third choices.
+
+***
+
+Purpose
+
+The objective of this assignment is to define, formulate, and solve a mathematical optimization model. 
+
+Directions
+
+You have been tasked with the objective of forming groups. Assume that your class consists of 12 students, and you would like to form 4 groups of 3 students each. Your primary objective is to ensure that you maximize the chance that each group will do well on a class project. Here are the requirements to form groups: 
+
+1. Each group should have exactly 3 students 
+2. The objective is to maximize the chance of success for each group on a class project.
+
+Before you can solve this problem, there are several issues that must be addressed. Some of these being: 
+
+1.	What factors affect the success of groups? Define three factors, e.g., GPA, gender, etc., that you feel affect the contributions that students make towards project success. 
+2.	How do the above factors combine to define success? For example, is a person with high GPA the same as one with a more relevant background? Decide on how each of the factors contribute toward your definition of success. 
+3.	How will you collect data for these factors? For this assignment, randomly generate sensible data for each of the above three defined factors. 
+4.	What are your decision variables? 
+5.	What is your objective function? 
+6.	What are your constraints? Formulate and solve the problem. 
+
+Deliverables
+
+Provide the corresponding R markdown file, and a narrative recorded presentation justifying your approach to the choice of factors, data collection, and formulation. 
+
+Initial Setup
+
+As a real-world example problem, I would like to match a group of students/individuals to a set of groups with the following constraints:
+
+1.	Each group has a capacity.
+2.	Every student/individual needs to be assigned to exactly one group.
+3.	All students/individual have stated individual preferences on a scale from 1 to 3, where 3 is the most favorable group assignment. All students must rate from 1 to 5, where 5 is the most important favorable group characteristic. The three individual characteristics are the desirable to have at least one female group member besides ones own gender, at least more member that has relevant project experience, and number of years of professional employment.
+
+Each student will then rate these factors and derive a preference for a particular group. It has been my experience that there is so much subjectivity in project group selection, that it is best to let individuals subjectively rate these three factors and create a preference on a group via a stated individual preference from 1 to 3.
+
+The basic equation would be based on the individual's weights on each of the factors of co-worker gender, relevant project experience, and years of successful professional employment. 
+
+The basic equation would be:
+
+EV = weight1 (co-worker gender) + weight2 (relevant project experience) + weight3 (years of successful professional employment)
+
+Then each student/individual would inspect each available group that is available based on type of project, minimu levels of gender diversity, and required levels of experience. It is assumed that these minimun qualifications and descriptions are known to our stduents/individuals, or preferences cannot be used in the selection process. Then each one would calculate the expected value of each group based on their rating and weight selection. This program then assumes that these rankings have been made and ready for group placement based on their group project placement. Having spent years in industry and academic environments, I understand teh complexities and subjectivity in placing students/individuals into projects. There are too many interactions that making a simple linear programming model or regission equation cannot capture. I believe that allowing for studnets/individuals to subjective rank their preferences based on their own value of these 3 factors may be the best way to proceed.
+
+
+Data Collection/Method
+
+We have n = 12 working professionals/students/individuals with m = 3 group members in each of the project group assignments.
+
+```{r}
+
+# n = 12 working professionals/students/individuals
+
+n <- 12
+
+
+```
+
+Next, let us use m groups with equal capacity. The capacity can vary among groups though. Let us assume that we have 4 groups.
+
+```{r}
+
+# m = 3 group members in each of the project group assignments, allowing for 3 students/individuals into a total of 4 group assignments
+m <- 4
+capacity <- rep.int(11, m) 
+
+# all project groups must have equal capacities
+
+```
+
+In addition, each student has 3 preferences. To model this we have a function that gives us three project groups for each student. The first component has preference 1, second 2, and third 3.
+
+```{r}
+
+set.seed(1234)
+preference_data <- lapply(seq_len(n), function(x) sample(seq_len(m), 3))
+preferences <- function(student) preference_data[[student]]
+preferences(1)
+
+# [1] 1 2 3
+
+
+```
+
+The last component we need is a weight functions to make the model formulation easier. This function gives us the preference weighting for a group and individual pair.
+
+```{r}
+
+# the weight of a student/individual choosing a project group assignment
+# if the available project assignment is not among the preferences, the weight is -500000
+
+weight <- function(student, group) {
+  p <- which(as.numeric(group) == preferences(as.numeric(student)))
+  as.integer(if (length(p) == 0) {
+    -500000
+  } else {
+    p
+  })
+}
+
+
+
+```
+
+The following code illustrates some examples of different weights.
+
+```{r}
+
+
+weight(1, 3)
+## [1] 3
+weight(1, 23) # this was not a choice by individual 1, so we give it a big penalty
+
+# project assignment [1] gets the big  = -500000
+
+
+```
+
+Let's take a look at our random preferences. We plot the number of votes for each available project grouped by the preference (1, 2, 3).
+
+However, we must install a number of libraries.
+
+```{r}
+
+install.packages("ggplot2")
+install.packages("purrr")
+install.packages("dplyr")
+
+```
+
+
+```{r}
+
+
+library(ggplot2)
+library(purrr)
+library(dplyr)
+plot_data <- expand.grid(
+  project = seq_len(m),
+  weight = 1:3
+) %>% rowwise() %>% 
+  mutate(count = sum(map_int(seq_len(n), ~weight(.x, project) == weight))) %>% 
+  mutate(project = factor(project), weight = factor(weight))
+ggplot(plot_data, aes(x = project, y = count, fill = weight)) + 
+  geom_bar(stat = "identity") + 
+  viridis::scale_fill_viridis(discrete = TRUE) + 
+  geom_hline(yintercept = 11)
+
+
+```
+
+Model Devopment.
+
+Now that we can generate date represnetative of the preferences of potential group members based on their subject ranking of the three factors I have decided upon, it is time to generate a model.
+
+The model  is based on the idea is to introduce a binary variable xi,jxi,j that is 11 if student ii is matched to course jj. As an objective we will try to satisfy preferences according to their weight. So, assigning a student to a project group with preference 3 gives 3 points and so forth. The model assumes, that the total capacity of the project groups is enough for all students.
+
+Here it is in mathematical notation:
+
+max
+
+subject to???i=1n???j=1mweighti,j???xi,j???i=1nxi,j???capacityj,
+
+???j=1mxi,j=1,xi,j???{0,1},j=1,.,mi=1,.,ni=1,.,n,j=1,.,mmax???i=1n???j=1mweighti,j???xi,j
+
+subject to
+
+???i=1nxi,j???capacityj,j=1,.,m???j=1mxi,j=1,i=1,.,nxi,j???{0,1},i=1,.,n,j=1,.,m
+
+Or directly in R=script.
+
+Now it is required to install library(ompr) and library (glpk)
+
+```{r}
+
+install.packages("ompr")
+
+
+```
+
+Now, load the library I need to do assignment, namely ompr.
+
+library(ompr)
+library(ompr.roi)
+library(ROI.plugin.glpk)
+
+```{r}
+
+install.packages("ompr")
+install.packages("ompr.roi")
+install.packages("ROI.plugin.glpk")
+install.packages("glpkAPI")
+
+
+```
+
+```{r}
+
+library(ompr.roi)
+library(ROI.plugin.glpk)
+library(glpkAPI)
+
+
+
+```
+
+***
+GENERAL INFORMATION HERE ABOUT THE MODEL (derived from Hübscher, 2010, p. 182)
+
+In reality, an instructor often would like to add some additional preferences to the group creation process. As defined earlier, the function to be optimized is (S)=g(S)+h(S), where h
+(S)is the term for the context-specific preferences. For each new preference, a term hi(S)is specified and h(S) is defined as h(S)=???i??ihi(S), where the ??i are parameters to influence what is more important, the general assignment criterion or some of the context-specific preferences. Thus, the function to be maximized is f(S)=g(S)+h(S)=g(S)+???i??ihi(S).Assuming that the maximal values of hi(S) and hj(S) are the same, then the preferencei expressed by hi is more important than preference j expressed by hj if ??i>??j. Thus, preference i has a better chance of being satisfied than j in case of a conflict.In the current implementation, neither g(S) nor any hi(S) is scaled to a specific range. The value of g(S) tends to be much larger than the one of any hi(S), because r???g(S)???rl2 assuming that the r characteristics are rated on a Likert scale with values from 1 to l. Thus, satisfying the global criterion g is preferred over satisfying the context-specific criteria hi . Furthermore, the computational results below show that the 
+??i do not have to be adjusted in too subtle a way.All preferences are formulated within this framework with one exception, the size of the groups. In its current formulation, TabuSearchSAP treats the group size as a hard, built-in constraint because a move in the algorithms is defined as a swap of two students which is a natural and simple approach. 
+
+REFERENCE
+
+Hübscher, R. (2010). Assigning Students to Groups Using General and Context-Specific Criteria. IEEE Transactions on Learning Technologies, 3, 178-189.
+
+
+PLEASE NOTE: In terms of this project, the advantage is that this preference is always fully satisfied. The disadvantage is that the size for each group must be specified in advance and is static. In general, this is not a big problem because it is uncommon to use group sizes that vary widely. Alternative approaches to the swap move are possible, for instance, by complementing swaps with simple moves of one student from one group to another. This is a Mixed integer linear optimization problem with no continous Variables. In terms of integer vaibles, there are 160 binary. The model sense is to maximize the potential members' preference rankings.
+
+
+```{r}
+
+
+library(ompr)
+model1 <- MIPModel()%>% add_variable(x[i, j], i = 1:n, j = 1:m, type = "binary") %>% set_objective(sum_expr(weight(i, j) * x[i, j], i = 1:n, j = 1:m)) %>% add_constraint(sum_expr(x[i, j], i = 1:n) <= capacity[j], j = 1:m) %>% add_constraint(sum_expr(x[i, j], j = 1:m) == 1, i = 1:n)
+
+print(model1) 
+model1
+summary(model1)
+
+
+
+```
+
+```{r}
+
+# Therefore, 1 iff student i is assigned to course m
+#
+# We are to maximixe the student/individual preferences
+#
+# It is not allowed to exceed the capacity of a project group assignment
+#
+# Each student/indidual will only be assigned to one project
+
+model <- MIPModel() %>% add_variable(x[i, j], i = 1:n, j = 1:m, type = "binary") %>%
+set_objective(sum_expr(weight(i, j) * x[i, j], i = 1:n, j = 1:m)) %>%
+add_constraint(sum_expr(x[i, j], i = 1:n) <= capacity[j], j = 1:m) %>%
+add_constraint(sum_expr(x[i, j], j = 1:m) == 1, i = 1:n)
+
+model
+
+library(ompr.roi)
+library(ROI.plugin.glpk)
+result <- solve_model(model, with_ROI(solver = "glpk", verbose = TRUE))
+
+
+```
+We can now solve the model.
+
+
+```{r}
+
+
+library(ompr.roi)
+library(ROI.plugin.glpk)
+result <- solve_model(model, with_ROI(solver = "glpk", verbose = TRUE))
+
+
+```
+
+We solved the problem with an objective value suggesting that an optimal integer solution was found. There were 16 rows, 48 columns, 96 non-zeros, 48 integer variables, all of which are binary.
+
+Variables:
+  Continuous: 0 
+  Integer: 0 
+  Binary: 48 
+Model sense: maximize 
+Constraints: 16 
+
+Next, we now need to match results with the solution for assignment to project groups.
+
+
+```{r}
+
+# 
+matching <- result %>% 
+  get_solution(x[i,j]) %>%
+  filter(value > .9) %>%  
+  select(i, j) %>% 
+  rowwise() %>% 
+  mutate(weight = weight(as.numeric(i), as.numeric(j)), 
+         preferences = paste0(preferences(as.numeric(i)), collapse = ",")) %>% ungroup
+head(matching)
+
+matching %>% 
+  group_by(weight) %>% 
+  summarise(count = n())
+
+
+```
+
+All 12 students/individuals got their top project preference (as expected). In total, 0 individuals were assigned to their second choice and 0 students/individuals got their least preferable project assignment.
+
+The project group assignment now looks graphically by using ggplots after the following execution of code.
+
+```{r}
+
+plot_data <- matching %>% 
+  mutate(project = factor(j), weight = factor(weight, levels = c(1, 2, 3))) %>% 
+  group_by(project, weight) %>% 
+  summarise(count = n()) %>% 
+  tidyr::complete(weight, fill = list(count = 0))
+ggplot(plot_data, aes(x = project, y = count, fill = weight)) + 
+  geom_bar(stat = "identity") + 
+  viridis::scale_fill_viridis(discrete = TRUE) + 
+  geom_hline(yintercept = 11)
+
+```
+
+Of course, with only 12 indidivuals and three projects, it was almost certain that we could accommodate them. The challenge would be with a significantly larger n-size. That can be simply done by changing the inital settings at the beginning of the r-script.
